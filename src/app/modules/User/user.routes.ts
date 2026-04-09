@@ -1,0 +1,24 @@
+import express, { NextFunction, Request, Response } from "express";
+import auth from "../../middlewares/auth";
+import { userControllers } from "./user.controller";
+import { upload } from "../../utils/sendImageToCloudinary";
+
+const router = express.Router();
+
+router.get("/", userControllers.getUsers);
+router.get("/me", auth("admin", "user", "superAdmin"), userControllers.getMe);
+router.get("/:id", userControllers.getEachUser);
+router.patch(
+  "/edit-profile",
+  auth("admin", "user", "superAdmin"),
+  upload.single("image"),
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.body.data) {
+      req.body = JSON.parse(req.body.data);
+    }
+    next();
+  },
+  userControllers.editProfile,
+);
+
+export const userRoutes = router;
