@@ -42,9 +42,28 @@ const userSchema = new Schema<IUser>(
     phone: {
       type: String,
     },
-    countryCode: {
+    // 🌍 location (Saudi structure)
+    address: {
       type: String,
     },
+    country: {
+      type: String,
+      default: "Saudi Arabia",
+    },
+    countryCode: {
+      type: String,
+      default: "SA",
+    },
+    region: {
+      type: String, // e.g. Riyadh Province
+    },
+    city: {
+      type: String, // e.g. Riyadh, Jeddah
+    },
+    district: {
+      type: String, // e.g. Al Olaya
+    },
+
     dateOfBirth: {
       type: Date,
     },

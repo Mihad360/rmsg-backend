@@ -19,7 +19,14 @@ export interface IUser {
   name?: string;
   profileImage?: string;
   phone?: string;
-  countryCode?: string;
+  // 🌍 location (Saudi-based structure)
+  address?: string; // e.g. "Building 12, Street 5"
+  country?: string; // "Saudi Arabia"
+  countryCode?: string; // "SA"
+  region?: string; // e.g. "Riyadh Province"
+  city?: string; // e.g. "Riyadh"
+  district?: string; // e.g. "Al Olaya"
+
   dateOfBirth?: Date;
   age?: number;
   gender?: string;

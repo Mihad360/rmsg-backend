@@ -14,5 +14,10 @@ router.patch(
   auth("superAdmin"),
   superAdminControllers.updateRoleAccess,
 );
+router.get(
+  "/stats",
+  auth("superAdmin"),
+  superAdminControllers.getDashboardStats,
+);
 
 export const superAdminRoutes = router;

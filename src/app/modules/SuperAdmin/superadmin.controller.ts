@@ -20,7 +20,6 @@ const updateRequestStatus = catchAsync(async (req, res) => {
 
 const updateRoleAccess = catchAsync(async (req, res) => {
   const userId = req.params.userId;
-  console.log(req.body);
   const result = await superAdminServices.updateRoleAccess(userId, req.body);
 
   sendResponse(res, {
@@ -31,7 +30,18 @@ const updateRoleAccess = catchAsync(async (req, res) => {
   });
 });
 
+const getDashboardStats = catchAsync(async (req, res) => {
+  const result = await superAdminServices.getDashboardStats(req.query);
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Dashboard stats fetched successfully.",
+    data: result,
+  });
+});
+
 export const superAdminControllers = {
   updateRequestStatus,
   updateRoleAccess,
+  getDashboardStats,
 };
