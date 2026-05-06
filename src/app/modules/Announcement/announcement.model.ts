@@ -78,10 +78,10 @@ const announcementSchema = new Schema<IAnnouncement>(
       default: "all",
     },
 
-    groupFilter: {
-      type: announcementGroupFilterSchema,
-      default: null, // 👈 important
-    },
+    // groupFilter: {
+    //   type: announcementGroupFilterSchema,
+    //   default: null, // 👈 important
+    // },
 
     targetUsers: {
       type: [Schema.Types.ObjectId],

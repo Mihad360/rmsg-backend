@@ -29,7 +29,26 @@ class QueryBuilder<T> {
     const excludeFields = ["searchTerm", "sort", "limit", "page", "fields"];
     excludeFields.forEach((el) => delete queryObj[el]);
 
-    this.modelQuery = this.modelQuery.find(queryObj as FilterQuery<T>);
+    const mongoQuery: Record<string, unknown> = {};
+
+    for (const key in queryObj) {
+      const value = queryObj[key];
+
+      // ✅ handle range like age=20-30
+      if (typeof value === "string" && value.includes("-")) {
+        const [min, max] = value.split("-").map(Number);
+
+        if (!isNaN(min) && !isNaN(max)) {
+          mongoQuery[key] = { $gte: min, $lte: max };
+          continue;
+        }
+      }
+
+      // default behavior
+      mongoQuery[key] = value;
+    }
+
+    this.modelQuery = this.modelQuery.find(mongoQuery as FilterQuery<T>);
     return this;
   }
 

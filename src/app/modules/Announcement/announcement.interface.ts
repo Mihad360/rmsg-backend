@@ -27,7 +27,7 @@ export interface IAnnouncement {
 
   // targeting
   targetType?: AnnouncementTargetType; // "all" | "group"
-  groupFilter?: IAnnouncementGroupFilter | null; // when targetType = "group"
+  // groupFilter?: IAnnouncementGroupFilter | null; // when targetType = "group"
   targetUsers?: Types.ObjectId[]; // specific selected users
 
   createdAt?: Date;

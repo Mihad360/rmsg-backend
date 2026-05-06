@@ -10,7 +10,11 @@ router.get(
   auth("superAdmin", "admin", "user"),
   pollControllers.getAllPolls,
 );
-router.get("/:pollId/answers", auth("superAdmin"), pollControllers.getPollAnswers);
+router.get(
+  "/:pollId/answers",
+  auth("superAdmin", "user"),
+  pollControllers.getPollAnswers,
+);
 
 router.post("/:pollId/answer", auth("user"), pollControllers.answerPoll);
 router.post("/create", auth("superAdmin"), pollControllers.createPoll);

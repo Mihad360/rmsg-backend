@@ -34,6 +34,18 @@ const getAnnouncements = catchAsync(async (req, res) => {
   });
 });
 
+const getEachAnnouncement = catchAsync(async (req, res) => {
+  const id = req.params.announcementId;
+  const result = await announcementServices.getEachAnnouncement(id);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "OTP verified successfully",
+    data: result,
+  });
+});
+
 const updateAnnouncementStatus = catchAsync(async (req, res) => {
   const announcementId = req.params.announcementId;
   const result = await announcementServices.updateAnnouncementStatus(
@@ -53,4 +65,5 @@ export const announcementControllers = {
   createAnnouncement,
   getAnnouncements,
   updateAnnouncementStatus,
+  getEachAnnouncement,
 };

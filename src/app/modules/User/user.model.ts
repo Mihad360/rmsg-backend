@@ -30,6 +30,7 @@ const userSchema = new Schema<IUser>(
     },
     profileImage: {
       type: String,
+      default: null,
     },
 
     role: {
@@ -55,47 +56,61 @@ const userSchema = new Schema<IUser>(
       default: "SA",
     },
     region: {
-      type: String, // e.g. Riyadh Province
+      type: String, // e.g. Riyadh Provincev
+      default: null,
     },
     city: {
       type: String, // e.g. Riyadh, Jeddah
+      default: null,
     },
     district: {
       type: String, // e.g. Al Olaya
+      default: null,
     },
 
     dateOfBirth: {
       type: Date,
+      default: null,
     },
     age: {
       type: Number,
+      default: null,
     },
     gender: {
       type: String,
+      default: null,
     },
     employmentStatus: {
       type: String,
+      default: null,
     },
     education: {
       type: String,
+      default: null,
     },
     educationLevel: {
       type: String,
+      default: null,
     },
     universityName: {
       type: String,
+      default: null,
     },
     fieldOfWork: {
       type: String,
+      default: null,
     },
     spouseName: {
       type: String,
+      default: null,
     },
     spousePhone: {
       type: String,
+      default: null,
     },
     linkedinLink: {
       type: String,
+      default: null,
     },
 
     // tree

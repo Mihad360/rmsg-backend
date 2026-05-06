@@ -66,17 +66,42 @@ const answerPoll = async (
   pollId: string,
   payload: { optionId?: string; answer?: string },
 ) => {
-  const existingUser = await UserModel.findById(user.user).lean();
+  // ── 1. Validate user & poll exist ────────────────────────────────────────
+  const [existingUser, poll] = await Promise.all([
+    UserModel.findById(user.user).lean(),
+    PollModel.findById(pollId).lean(),
+  ]);
+
   if (!existingUser) {
     throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
   }
-
-  const poll = await PollModel.findById(pollId).lean();
   if (!poll) {
     throw new AppError(HttpStatus.NOT_FOUND, "Poll not found.");
   }
 
-  // duplicate vote check
+  // ── 2. Payload validation per answerType ─────────────────────────────────
+  if (poll.answerType === "selector" && !payload.optionId) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "Option is required.");
+  }
+  if (poll.answerType === "write-in" && !payload.answer?.trim()) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "Answer is required.");
+  }
+
+  // ── 3. Validate optionId actually belongs to this poll ───────────────────
+  if (poll.answerType === "selector" && payload.optionId) {
+    const optionExists = poll.options?.some(
+      (opt) => opt._id!.toString() === payload.optionId,
+    );
+
+    if (!optionExists) {
+      throw new AppError(
+        HttpStatus.BAD_REQUEST,
+        "The selected option does not belong to this poll.",
+      );
+    }
+  }
+
+  // ── 4. Duplicate vote check ───────────────────────────────────────────────
   const alreadyAnswered = await PollAnswerModel.findOne({
     poll: new Types.ObjectId(pollId),
     user: new Types.ObjectId(user.user),
@@ -89,14 +114,7 @@ const answerPoll = async (
     );
   }
 
-  if (poll.answerType === "selector" && !payload.optionId) {
-    throw new AppError(HttpStatus.BAD_REQUEST, "Option is required.");
-  }
-
-  if (poll.answerType === "write-in" && !payload.answer) {
-    throw new AppError(HttpStatus.BAD_REQUEST, "Answer is required.");
-  }
-
+  // ── 5. Transactional write ────────────────────────────────────────────────
   const session = await mongoose.startSession();
 
   try {
@@ -105,32 +123,39 @@ const answerPoll = async (
     await PollAnswerModel.create(
       [
         {
-          poll: pollId,
-          user: user.user,
+          poll: new Types.ObjectId(pollId),
+          user: new Types.ObjectId(user.user),
           ...(payload.optionId && {
             optionId: new Types.ObjectId(payload.optionId),
           }),
-          ...(payload.answer && { answer: payload.answer }),
+          ...(payload.answer && { answer: payload.answer.trim() }),
         },
       ],
       { session },
     );
 
     if (poll.answerType === "selector" && payload.optionId) {
-      await PollModel.updateOne(
+      // ✅ Cast to ObjectId so _id comparison never silently mismatches
+      const result = await PollModel.updateOne(
         {
-          _id: pollId,
-          "options._id": payload.optionId,
+          _id: new Types.ObjectId(pollId),
+          "options._id": new Types.ObjectId(payload.optionId),
         },
-        {
-          $inc: { "options.$.count": 1 },
-        },
+        { $inc: { "options.$.count": 1 } },
         { session },
       );
+
+      // ✅ If nothing was modified, the option lookup failed — abort early
+      if (result.modifiedCount === 0) {
+        throw new AppError(
+          HttpStatus.BAD_REQUEST,
+          "Failed to record vote — option not found in poll.",
+        );
+      }
     }
 
     await PollModel.findByIdAndUpdate(
-      pollId,
+      new Types.ObjectId(pollId),
       { $inc: { totalResponses: 1 } },
       { session },
     );
@@ -161,16 +186,17 @@ const getPollAnswers = async (
   }
 
   if (poll.answerType === "selector") {
-    // get user answer
-    const userAnswer = await PollAnswerModel.findOne({
-      poll: new Types.ObjectId(pollId),
-      user: new Types.ObjectId(user.user),
-    }).lean();
+    // ✅ Run both queries in parallel — userAnswer will simply be null if not answered
 
-    // aggregate counts
-    const answerCounts = await PollAnswerModel.aggregate([
-      { $match: { poll: new Types.ObjectId(pollId) } },
-      { $group: { _id: "$optionId", count: { $sum: 1 } } },
+    const [userAnswer, answerCounts] = await Promise.all([
+      PollAnswerModel.findOne({
+        poll: pollId,
+        user: user.user,
+      }).lean(),
+      PollAnswerModel.aggregate([
+        { $match: { poll: new Types.ObjectId(pollId) } },
+        { $group: { _id: "$optionId", count: { $sum: 1 } } },
+      ]),
     ]);
 
     const countMap = new Map(
@@ -178,56 +204,57 @@ const getPollAnswers = async (
     );
 
     const options = poll.options?.map((opt) => {
-      const count = countMap.get(opt._id!.toString()) || 0;
+      const count = countMap.get(opt._id!.toString()) ?? 0;
+      const total = poll.totalResponses ?? 0;
 
       return {
         _id: opt._id,
         text: opt.text,
         count,
-        percentage:
-          (poll.totalResponses ?? 0) > 0
-            ? Math.round((count / (poll.totalResponses ?? 0)) * 100)
-            : 0,
+        percentage: total > 0 ? Math.round((count / total) * 100) : 0,
       };
     });
-
-    // ✅ FINAL RESPONSE WITH POLL DATA
+    // console.log("userAnswer:", userAnswer);
     return {
       _id: poll._id,
       title: poll.title,
       tagline: poll.tagline,
       createdBy: poll.createdBy,
       answerType: poll.answerType,
-      totalResponses: poll.totalResponses,
-
+      totalResponses: poll.totalResponses ?? 0,
       options,
-
-      myAnswer: userAnswer
-        ? {
-            optionId: userAnswer.optionId,
-          }
-        : null,
-    };
-  } else {
-    // write-in — paginated individual answers
-    const baseQuery = PollAnswerModel.find({
-      poll: new Types.ObjectId(pollId),
-    })
-      .populate("poll", "_id title tagline totalResponses createdAt")
-      .populate("user", "_id name profileImage");
-
-    const answers = new QueryBuilder(baseQuery, query).paginate().fields();
-
-    const meta = await answers.countTotal();
-    const result = await answers.modelQuery;
-
-    return {
-      answerType: "write-in",
-      totalResponses: poll.totalResponses,
-      meta,
-      result,
+      // ✅ null if not answered — never throws
+      myAnswer: userAnswer ? { optionId: userAnswer.optionId } : null,
+      answered: userAnswer ? true : false,
     };
   }
+
+  // ── write-in branch ──────────────────────────────────────────────────────
+  const baseQuery = PollAnswerModel.find({
+    poll: new Types.ObjectId(pollId),
+  })
+    .populate("poll", "_id title tagline totalResponses createdAt")
+    .populate("user", "_id name profileImage");
+
+  const builder = new QueryBuilder(baseQuery, query).paginate().fields();
+
+  const [meta, result] = await Promise.all([
+    builder.countTotal(),
+    builder.modelQuery,
+  ]);
+
+  return {
+    _id: poll._id,
+    title: poll.title,
+    tagline: poll.tagline,
+    createdBy: poll.createdBy,
+    answerType: poll.answerType,
+    totalResponses: poll.totalResponses ?? 0,
+    // ✅ write-in has no concept of "my answer" — always null
+    myAnswer: null,
+    meta,
+    result,
+  };
 };
 
 export const pollServices = {

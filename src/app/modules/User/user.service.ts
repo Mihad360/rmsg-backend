@@ -7,6 +7,8 @@ import QueryBuilder from "../../../builder/QueryBuilder";
 import { IUser } from "./user.interface";
 import { sendFileToCloudinary } from "../../utils/sendImageToCloudinary";
 
+const searchUsers = ["name", "phone", "address", ""];
+
 const getMe = async (user: JwtPayload) => {
   const userId = new Types.ObjectId(user.user);
   const isUserExist = await UserModel.findById(userId).select(
@@ -26,7 +28,7 @@ const getUsers = async (query: Record<string, unknown>) => {
     ),
     query,
   )
-    // .search(searchUsers)
+    .search(searchUsers)
     .filter()
     .sort()
     .paginate()

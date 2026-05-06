@@ -10,6 +10,11 @@ router.get(
   auth("admin", "user", "superAdmin"),
   announcementControllers.getAnnouncements,
 );
+router.get(
+  "/:announcement",
+  auth("admin", "user", "superAdmin"),
+  announcementControllers.getEachAnnouncement,
+);
 router.post(
   "/create",
   auth("admin", "user", "superAdmin"),

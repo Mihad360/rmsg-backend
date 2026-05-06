@@ -19,21 +19,19 @@ const createAnnouncement = async (
   }
 
   if (payload.targetType === "group") {
-    const hasGroupFilter =
-      payload.groupFilter && Object.keys(payload.groupFilter).length > 0;
-    const hasTargetUsers =
-      payload.targetUsers && payload.targetUsers.length > 0;
-
-    if (!hasGroupFilter && !hasTargetUsers) {
+    if (!payload.targetUsers || payload.targetUsers.length === 0) {
       throw new AppError(
         HttpStatus.BAD_REQUEST,
-        "For group targeting, provide either groupFilter criteria or specific targetUsers.",
+        "targetUsers is required when targetType is group",
       );
     }
+
+    // remove groupFilter completely
+    // payload.groupFilter = null;
   }
 
   if (payload.targetType === "all") {
-    payload.groupFilter = null;
+    // payload.groupFilter = null;
     payload.targetUsers = [];
   }
 
@@ -81,53 +79,52 @@ const getAnnouncements = async (
       },
 
       // targeted by group filter
-      {
-        targetType: "group",
-        targetUsers: { $size: 0 },
-        $and: [
-          {
-            $or: [
-              { "groupFilter.gender": null },
-              { "groupFilter.gender": existingUser.gender },
-            ],
-          },
-          {
-            $or: [
-              { "groupFilter.ageRange.min": null },
-              { "groupFilter.ageRange.min": { $lte: existingUser.age } },
-            ],
-          },
-          {
-            $or: [
-              { "groupFilter.ageRange.max": null },
-              { "groupFilter.ageRange.max": { $gte: existingUser.age } },
-            ],
-          },
-          {
-            $or: [
-              { "groupFilter.employmentStatus": null },
-              {
-                "groupFilter.employmentStatus": existingUser.employmentStatus,
-              },
-            ],
-          },
-          {
-            $or: [
-              { "groupFilter.educationLevel": null },
-              {
-                "groupFilter.educationLevel": existingUser.educationLevel,
-              },
-            ],
-          },
-        ],
-      },
+      // {
+      //   targetType: "group",
+      //   targetUsers: { $size: 0 },
+      //   $and: [
+      //     {
+      //       $or: [
+      //         { "groupFilter.gender": null },
+      //         { "groupFilter.gender": existingUser.gender },
+      //       ],
+      //     },
+      //     {
+      //       $or: [
+      //         { "groupFilter.ageRange.min": null },
+      //         { "groupFilter.ageRange.min": { $lte: existingUser.age } },
+      //       ],
+      //     },
+      //     {
+      //       $or: [
+      //         { "groupFilter.ageRange.max": null },
+      //         { "groupFilter.ageRange.max": { $gte: existingUser.age } },
+      //       ],
+      //     },
+      //     {
+      //       $or: [
+      //         { "groupFilter.employmentStatus": null },
+      //         {
+      //           "groupFilter.employmentStatus": existingUser.employmentStatus,
+      //         },
+      //       ],
+      //     },
+      //     {
+      //       $or: [
+      //         { "groupFilter.educationLevel": null },
+      //         {
+      //           "groupFilter.educationLevel": existingUser.educationLevel,
+      //         },
+      //       ],
+      //     },
+      //   ],
+      // },
     ],
   };
 
   const baseQuery = AnnouncementModel.find(filter)
     .populate("createdBy", "_id name profileImage")
     .sort({ createdAt: -1 });
-
   const announcements = new QueryBuilder(baseQuery, query)
     .search(["title", "description"])
     .filter()
@@ -136,8 +133,18 @@ const getAnnouncements = async (
 
   const meta = await announcements.countTotal();
   const result = await announcements.modelQuery;
+  // console.log(result);
 
   return { meta, result };
+};
+
+const getEachAnnouncement = async (announcementId: string) => {
+  const announcement = await AnnouncementModel.findById(announcementId);
+  if (!announcement) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Announcement not found.");
+  }
+
+  return announcement;
 };
 
 const updateAnnouncementStatus = async (
@@ -175,4 +182,5 @@ export const announcementServices = {
   createAnnouncement,
   getAnnouncements,
   updateAnnouncementStatus,
+  getEachAnnouncement,
 };

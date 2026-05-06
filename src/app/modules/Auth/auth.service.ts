@@ -41,7 +41,7 @@ const createUser = async (payload: IUser) => {
       expiresAt: expireAt,
     },
     { new: true },
-  ).select("-password -otp -passwordChangedAt");
+  ).select("-password -otp -passwordChangedAt  -fcmToken");
 
   if (!updatedUser) {
     throw new AppError(HttpStatus.BAD_REQUEST, "Failed to update OTP");
