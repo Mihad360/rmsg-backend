@@ -180,19 +180,17 @@ const getPollAnswers = async (
     throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
   }
 
-  const poll = await PollModel.findById(pollId).lean();
+  const poll = await PollModel.findById(pollId)
+    .populate("createdBy", "_id name profileImage")
+    .lean();
   if (!poll) {
     throw new AppError(HttpStatus.NOT_FOUND, "Poll not found.");
   }
 
+  // selector branch
   if (poll.answerType === "selector") {
-    // ✅ Run both queries in parallel — userAnswer will simply be null if not answered
-
     const [userAnswer, answerCounts] = await Promise.all([
-      PollAnswerModel.findOne({
-        poll: pollId,
-        user: user.user,
-      }).lean(),
+      PollAnswerModel.findOne({ poll: pollId, user: user.user }).lean(),
       PollAnswerModel.aggregate([
         { $match: { poll: new Types.ObjectId(pollId) } },
         { $group: { _id: "$optionId", count: { $sum: 1 } } },
@@ -206,7 +204,6 @@ const getPollAnswers = async (
     const options = poll.options?.map((opt) => {
       const count = countMap.get(opt._id!.toString()) ?? 0;
       const total = poll.totalResponses ?? 0;
-
       return {
         _id: opt._id,
         text: opt.text,
@@ -214,46 +211,33 @@ const getPollAnswers = async (
         percentage: total > 0 ? Math.round((count / total) * 100) : 0,
       };
     });
-    // console.log("userAnswer:", userAnswer);
+
     return {
       _id: poll._id,
       title: poll.title,
       tagline: poll.tagline,
-      createdBy: poll.createdBy,
       answerType: poll.answerType,
       totalResponses: poll.totalResponses ?? 0,
       options,
-      // ✅ null if not answered — never throws
+      answered: !!userAnswer,
       myAnswer: userAnswer ? { optionId: userAnswer.optionId } : null,
-      answered: userAnswer ? true : false,
     };
   }
 
-  // ── write-in branch ──────────────────────────────────────────────────────
-  const baseQuery = PollAnswerModel.find({
-    poll: new Types.ObjectId(pollId),
-  })
-    .populate("poll", "_id title tagline totalResponses createdAt")
-    .populate("user", "_id name profileImage");
-
-  const builder = new QueryBuilder(baseQuery, query).paginate().fields();
-
-  const [meta, result] = await Promise.all([
-    builder.countTotal(),
-    builder.modelQuery,
-  ]);
+  // write-in branch – only the user's own answer as a string
+  const userAnswer = await PollAnswerModel.findOne({
+    poll: pollId,
+    user: user.user,
+  }).lean();
 
   return {
     _id: poll._id,
     title: poll.title,
     tagline: poll.tagline,
-    createdBy: poll.createdBy,
     answerType: poll.answerType,
     totalResponses: poll.totalResponses ?? 0,
-    // ✅ write-in has no concept of "my answer" — always null
-    myAnswer: null,
-    meta,
-    result,
+    answered: !!userAnswer,
+    answer: userAnswer ? userAnswer.answer : null, // plain string, not an object
   };
 };
 
