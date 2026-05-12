@@ -63,10 +63,21 @@ const uploadBanner = async (user: JwtPayload, file: Express.Multer.File) => {
   return banner;
 };
 
-const getActiveBanner = async () => {
+const getActiveBanner = async (user: JwtPayload) => {
   const now = new Date();
 
-  // cron handles activation — we just return the isActive: true banner
+  // if super admin -> return all banners newest first
+  if (user.role === "superAdmin") {
+    const banners = await BannerImageModel.find({
+      isDeleted: false,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return banners;
+  }
+
+  // normal users -> only active banner
   const activeBanner = await BannerImageModel.findOne({
     isActive: true,
     isDeleted: false,
@@ -76,13 +87,19 @@ const getActiveBanner = async () => {
     throw new AppError(HttpStatus.NOT_FOUND, "No active banner found.");
   }
 
-  // verify this active banner is still within its 2 month window
-  const twoMonthsAfterActivation = new Date(activeBanner?.activateAt);
+  // verify active banner validity
+  if (!activeBanner.activateAt) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Banner activation date missing.",
+    );
+  }
+
+  const twoMonthsAfterActivation = new Date(activeBanner.activateAt);
+
   twoMonthsAfterActivation.setMonth(twoMonthsAfterActivation.getMonth() + 2);
 
   if (now > twoMonthsAfterActivation) {
-    // banner has expired but cron hasn't run yet — return it anyway
-    // cron will fix it on next run, we don't mutate here
     throw new AppError(
       HttpStatus.NOT_FOUND,
       "Active banner has expired. Next banner not yet activated.",

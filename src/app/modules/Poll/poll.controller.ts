@@ -51,7 +51,6 @@ const getPollAnswers = catchAsync(async (req: Request, res: Response) => {
   const result = await pollServices.getPollAnswers(
     req.user as JwtPayload,
     req.params.pollId,
-    req.query,
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,

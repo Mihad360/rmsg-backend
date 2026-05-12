@@ -173,7 +173,6 @@ const answerPoll = async (
 const getPollAnswers = async (
   user: JwtPayload,
   pollId: string,
-  query: Record<string, unknown>,
 ) => {
   const existingUser = await UserModel.findById(user.user).lean();
   if (!existingUser) {

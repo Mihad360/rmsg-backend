@@ -22,31 +22,82 @@ const getMyTree = async (user: JwtPayload, query: Record<string, unknown>) => {
   }
 
   const myMember = await MemberModel.findById(existingUser.linkedMember)
-    .select("_id parent")
+    .select("_id parent tree")
     .lean();
 
   if (!myMember) {
     throw new AppError(HttpStatus.NOT_FOUND, "Member node not found.");
   }
 
-  // Check if this user has any children
   const hasChildren = await MemberModel.exists({
     parent: myMember._id,
     isDeleted: false,
     placementStatus: "placed",
   });
 
-  if (hasChildren) {
-    // I have children → show MY subtree starting from me
-    return getTree(myMember._id.toString(), query);
-  } else {
-    // I have no children → start from my parent so I appear as a child under him
-    if (!myMember.parent) {
-      // I am the root, no parent
-      return getTree(myMember._id.toString(), query);
-    }
-    return getTree(myMember.parent.toString(), query);
+  const startingMemberId = hasChildren
+    ? myMember._id.toString()
+    : myMember.parent
+      ? myMember.parent.toString()
+      : myMember._id.toString();
+
+  // fetch tree info
+  const tree = await TreeModel.findOne({ isDeleted: false, isDefault: true })
+    .select("_id name totalMembers isDefault rootMember createdBy")
+    .populate("createdBy", "_id name email role profileImage")
+    .lean();
+
+  if (!tree) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Tree not found.");
   }
+
+  // fetch all members under this tree
+  const allMembers = await MemberModel.find({
+    tree: tree._id,
+    isDeleted: false,
+  })
+    .select("_id label level relationType parent spouseOf linkedUser")
+    .populate("linkedUser", "_id name email role profileImage")
+    .sort({ createdAt: 1 })
+    .lean();
+
+  type MemberNode = (typeof allMembers)[number] & {
+    children: MemberNode[];
+    spouse: MemberNode | null;
+  };
+
+  // build map
+  const map = new Map<string, MemberNode>();
+  for (const m of allMembers) {
+    map.set(m._id.toString(), { ...m, children: [], spouse: null });
+  }
+
+  // build tree from startingMemberId instead of rootMember
+  let root: MemberNode | null = null;
+
+  for (const node of map.values()) {
+    if (node._id.toString() === startingMemberId) {
+      root = node;
+      continue;
+    }
+    if (node.parent) {
+      const parentNode = map.get(node.parent.toString());
+      if (parentNode) {
+        parentNode.children.push(node);
+      }
+    }
+  }
+
+  return {
+    treeInfo: {
+      _id: tree._id,
+      name: tree.name,
+      totalMembers: tree.totalMembers,
+      isDefault: tree.isDefault,
+      createdBy: tree.createdBy,
+    },
+    root,
+  };
 };
 
 const getTree = async (memberId: string, query: Record<string, unknown>) => {
@@ -56,7 +107,7 @@ const getTree = async (memberId: string, query: Record<string, unknown>) => {
     placementStatus: "placed",
   })
     .select("_id label level relationType parent linkedUser")
-    .populate("linkedUser", "_id name profileImage")
+    .populate("linkedUser")
     .lean();
 
   if (!startingNode) {
@@ -70,7 +121,7 @@ const getTree = async (memberId: string, query: Record<string, unknown>) => {
       placementStatus: "placed",
     })
       .select("_id label level relationType parent linkedUser")
-      .populate("linkedUser", "_id name profileImage")
+      .populate("linkedUser")
       .sort({ createdAt: 1 }); // ← oldest child first
 
     const children = await new QueryBuilder<IMember>(baseQuery, query)

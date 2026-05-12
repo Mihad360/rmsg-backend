@@ -1,3 +1,4 @@
+import cron from "node-cron";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import app from "./app";
 import config from "./app/config";
@@ -12,6 +13,7 @@ import {
   seedTerms,
 } from "./app/DB";
 import { seedTree } from "./app/DB/seedTree";
+import { startBannerActivationCron } from "./app/utils/bannerActivationCron";
 
 let server: Server;
 
@@ -28,6 +30,9 @@ async function main() {
 
     initSocketIO(server);
 
+    cron.schedule("* * * * *", async () => {
+      await startBannerActivationCron();
+    });
     seedAdmin().catch((err) => console.error("admin seeding error:", err));
     seedSuperAdmin().catch((err) =>
       console.error("Super admin seeding error:", err),

@@ -1,6 +1,7 @@
 import { Model, Types } from "mongoose";
 import { ITree } from "../Tree/tree.interface";
 import { IMember } from "../Member/member.interface";
+import { IContactInfo, IEducation, IExperience } from "../Request/request.interface";
 
 interface ProfileImage {
   path: string; // e.g., "images/1234567890-profile.jpg"
@@ -26,6 +27,15 @@ export interface IUser {
   region?: string; // e.g. "Riyadh Province"
   city?: string; // e.g. "Riyadh"
   district?: string; // e.g. "Al Olaya"
+
+  // ===== Added from Request =====
+  bio?: string;
+  contact?: IContactInfo;
+  educationHistory?: IEducation[];
+  experience?: IExperience[];
+
+  cvUrl?: string;
+  certificateUrl?: string[];
 
   dateOfBirth?: Date;
   age?: number;

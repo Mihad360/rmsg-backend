@@ -49,7 +49,7 @@ const RequestSchema = new Schema<IRequest>(
     },
     isDraft: { type: Boolean, default: true },
     bio: String,
-    jobSpec: String,
+    // jobSpec: String,
     contact: ContactInfoSchema,
     education: [EducationSchema],
     experience: [ExperienceSchema],

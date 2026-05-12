@@ -43,30 +43,59 @@ const userSchema = new Schema<IUser>(
     phone: {
       type: String,
     },
-    // 🌍 location (Saudi structure)
-    address: {
+
+    // 🌍 location
+    address: { type: String },
+    country: { type: String, default: "Saudi Arabia" },
+    countryCode: { type: String, default: "SA" },
+    region: { type: String, default: null },
+    city: { type: String, default: null },
+    district: { type: String, default: null },
+
+    // ===== NEW REQUEST-BASED FIELDS =====
+    bio: {
       type: String,
-    },
-    country: {
-      type: String,
-      default: "Saudi Arabia",
-    },
-    countryCode: {
-      type: String,
-      default: "SA",
-    },
-    region: {
-      type: String, // e.g. Riyadh Provincev
       default: null,
     },
-    city: {
-      type: String, // e.g. Riyadh, Jeddah
+
+    contact: {
+      phone: { type: String },
+      email: { type: String },
+      linkedin: { type: String },
+      address: { type: String },
+    },
+
+    educationHistory: [
+      {
+        school: String,
+        degree: String,
+        major: String,
+        from: Date,
+        to: Date,
+        isCurrent: Boolean,
+      },
+    ],
+
+    experience: [
+      {
+        company: String,
+        position: String,
+        from: Date,
+        to: Date,
+        isCurrent: Boolean,
+      },
+    ],
+
+    cvUrl: {
+      type: String,
       default: null,
     },
-    district: {
-      type: String, // e.g. Al Olaya
+
+    certificateUrl: {
+      type: String,
       default: null,
     },
+    // ====================================
 
     dateOfBirth: {
       type: Date,
@@ -130,7 +159,7 @@ const userSchema = new Schema<IUser>(
       default: "unlinked",
     },
 
-    // admin — only populated when role is "admin"
+    // admin
     adminScope: {
       type: Schema.Types.ObjectId,
       ref: "Member",

@@ -5,7 +5,11 @@ import { upload } from "../../utils/sendImageToCloudinary";
 
 const router = express.Router();
 
-router.get("/", bannerControllers.getActiveBanner);
+router.get(
+  "/",
+  auth("user", "admin", "superAdmin"),
+  bannerControllers.getActiveBanner,
+);
 router.post(
   "/upload",
   auth("superAdmin"),

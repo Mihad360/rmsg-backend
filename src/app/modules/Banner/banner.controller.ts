@@ -18,7 +18,8 @@ const uploadBanner = catchAsync(async (req, res) => {
 });
 
 const getActiveBanner = catchAsync(async (req, res) => {
-  const result = await bannerServices.getActiveBanner();
+  const user = req.user as JwtPayload;
+  const result = await bannerServices.getActiveBanner(user);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

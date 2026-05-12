@@ -62,70 +62,36 @@ const getAnnouncements = async (
   query: Record<string, unknown>,
 ) => {
   const existingUser = await UserModel.findById(user.user).lean();
+
   if (!existingUser) {
     throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
   }
 
   const filter: Record<string, unknown> = {
-    status: { $in: ["approved", "in_progress"] },
-    $or: [
-      // targeted to all
-      { targetType: "all" },
+    status: { $in: ["pending", "approved", "in_progress"] },
+  };
 
-      // targeted to this specific user
+  if (query.type === "my") {
+    filter.createdBy = new Types.ObjectId(user.user);
+  } else {
+    filter.$or = [
+      { targetType: "all" },
       {
         targetType: "group",
         targetUsers: new Types.ObjectId(user.user),
       },
+    ];
+  }
 
-      // targeted by group filter
-      // {
-      //   targetType: "group",
-      //   targetUsers: { $size: 0 },
-      //   $and: [
-      //     {
-      //       $or: [
-      //         { "groupFilter.gender": null },
-      //         { "groupFilter.gender": existingUser.gender },
-      //       ],
-      //     },
-      //     {
-      //       $or: [
-      //         { "groupFilter.ageRange.min": null },
-      //         { "groupFilter.ageRange.min": { $lte: existingUser.age } },
-      //       ],
-      //     },
-      //     {
-      //       $or: [
-      //         { "groupFilter.ageRange.max": null },
-      //         { "groupFilter.ageRange.max": { $gte: existingUser.age } },
-      //       ],
-      //     },
-      //     {
-      //       $or: [
-      //         { "groupFilter.employmentStatus": null },
-      //         {
-      //           "groupFilter.employmentStatus": existingUser.employmentStatus,
-      //         },
-      //       ],
-      //     },
-      //     {
-      //       $or: [
-      //         { "groupFilter.educationLevel": null },
-      //         {
-      //           "groupFilter.educationLevel": existingUser.educationLevel,
-      //         },
-      //       ],
-      //     },
-      //   ],
-      // },
-    ],
-  };
+  // remove custom query param
+  const modifiedQuery = { ...query };
+  delete modifiedQuery.type;
 
   const baseQuery = AnnouncementModel.find(filter)
     .populate("createdBy", "_id name profileImage")
     .sort({ createdAt: -1 });
-  const announcements = new QueryBuilder(baseQuery, query)
+
+  const announcements = new QueryBuilder(baseQuery, modifiedQuery)
     .search(["title", "description"])
     .filter()
     .paginate()
@@ -133,7 +99,6 @@ const getAnnouncements = async (
 
   const meta = await announcements.countTotal();
   const result = await announcements.modelQuery;
-  // console.log(result);
 
   return { meta, result };
 };
@@ -159,12 +124,12 @@ const updateAnnouncementStatus = async (
     throw new AppError(HttpStatus.NOT_FOUND, "Announcement not found.");
   }
 
-  if (payload.status === "declined" && !payload.declineReason) {
-    throw new AppError(
-      HttpStatus.BAD_REQUEST,
-      "Decline reason is required when declining an announcement.",
-    );
-  }
+  // if (payload.status === "declined" && !payload.declineReason) {
+  //   throw new AppError(
+  //     HttpStatus.BAD_REQUEST,
+  //     "Decline reason is required when declining an announcement.",
+  //   );
+  // }
 
   const updated = await AnnouncementModel.findByIdAndUpdate(
     announcementId,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import HttpStatus from "http-status";
 import { Types } from "mongoose";
 import { JwtPayload } from "../../interface/global";
@@ -51,7 +52,11 @@ const getEachUser = async (id: string) => {
 const editProfile = async (
   id: string,
   payload: Partial<IUser>,
-  file?: Express.Multer.File,
+  files?: {
+    image?: Express.Multer.File[];
+    cv?: Express.Multer.File[];
+    certificates?: Express.Multer.File[];
+  },
 ) => {
   const user = await UserModel.findById(id);
 
@@ -63,12 +68,103 @@ const editProfile = async (
     throw new AppError(HttpStatus.FORBIDDEN, "This user is deleted");
   }
 
-  // ✅ convert date string → Date
+  const updateData: Record<string, any> = {};
+
+  // =========================
+  // FLAT SAFE FIELDS (direct set)
+  // =========================
+  const directFields: (keyof IUser)[] = [
+    "name",
+    "phone",
+    "bio",
+    "address",
+    "country",
+    "countryCode",
+    "region",
+    "city",
+    "district",
+    "dateOfBirth",
+    "gender",
+    "employmentStatus",
+    "education",
+    "educationLevel",
+    "universityName",
+    "fieldOfWork",
+    "spouseName",
+    "spousePhone",
+    "linkedinLink",
+  ];
+
+  directFields.forEach((field) => {
+    if (payload[field] !== undefined) {
+      updateData[field] = payload[field];
+    }
+  });
+
+  // =========================
+  // NESTED SAFE MERGE (IMPORTANT)
+  // =========================
+  if (payload.contact) {
+    updateData.contact = {
+      ...(user.contact || {}),
+      ...payload.contact,
+    };
+  }
+
+  if (payload.educationHistory) {
+    updateData.educationHistory = payload.educationHistory;
+  }
+
+  if (payload.experience) {
+    updateData.experience = payload.experience;
+  }
+
+  // =========================
+  // FILES
+  // =========================
+
+  // profile image
+  if (files?.image?.[0]) {
+    const upload = await sendFileToCloudinary(
+      files.image[0].buffer,
+      files.image[0].originalname,
+      files.image[0].mimetype,
+    );
+    updateData.profileImage = upload.secure_url;
+  }
+
+  // CV
+  if (files?.cv?.[0]) {
+    const upload = await sendFileToCloudinary(
+      files.cv[0].buffer,
+      files.cv[0].originalname,
+      files.cv[0].mimetype,
+    );
+    updateData.cvUrl = upload.secure_url;
+  }
+
+  // certificates (replace full array for now)
+  if (files?.certificates?.length) {
+    const uploadedCertificates = await Promise.all(
+      files.certificates.map(async (file) => {
+        const upload = await sendFileToCloudinary(
+          file.buffer,
+          file.originalname,
+          file.mimetype,
+        );
+        return upload.secure_url;
+      }),
+    );
+
+    updateData.certificateUrls = uploadedCertificates;
+  }
+
+  // =========================
+  // DOB + AGE LOGIC
+  // =========================
   if (payload.dateOfBirth) {
     const dob = new Date(payload.dateOfBirth);
-    payload.dateOfBirth = dob;
 
-    // ✅ calculate age
     const today = new Date();
     let age = today.getFullYear() - dob.getFullYear();
 
@@ -78,7 +174,6 @@ const editProfile = async (
       age--;
     }
 
-    // ✅ validation
     if (age < 13) {
       throw new AppError(
         HttpStatus.BAD_REQUEST,
@@ -86,26 +181,19 @@ const editProfile = async (
       );
     }
 
-    // ✅ set age
-    payload.age = age;
+    updateData.dateOfBirth = dob;
+    updateData.age = age;
   }
 
-  // ✅ upload image
-  if (file) {
-    const uploadResult = await sendFileToCloudinary(
-      file.buffer,
-      file.originalname,
-      file.mimetype,
-    );
-    payload.profileImage = uploadResult.secure_url;
-  }
-
+  // =========================
+  // UPDATE
+  // =========================
   const updatedUser = await UserModel.findByIdAndUpdate(
     id,
-    { $set: payload },
+    { $set: updateData },
     {
       new: true,
-      runValidators: true, // 🔥 important
+      runValidators: true,
     },
   ).select("-password -otp -expiresAt");
 
