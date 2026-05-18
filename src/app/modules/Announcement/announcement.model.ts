@@ -88,6 +88,10 @@ const announcementSchema = new Schema<IAnnouncement>(
       ref: "User",
       default: [], // 👈 always array
     },
+    isDeleted: {
+      type: Boolean,
+      default: false, // 👈 always array
+    },
   },
   {
     timestamps: true,

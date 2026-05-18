@@ -22,5 +22,10 @@ router.post(
   },
   bannerControllers.uploadBanner,
 );
+router.delete(
+  "/:bannerId/delete",
+  auth("superAdmin"),
+  bannerControllers.deleteBanner,
+);
 
 export const bannerRoutes = router;

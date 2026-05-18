@@ -41,7 +41,8 @@ const getEachUser = catchAsync(async (req, res) => {
 
 const editProfile = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
-
+  console.log(req.body);
+  console.log(req.files);
   const id = user.user as string;
 
   const files = req.files as {

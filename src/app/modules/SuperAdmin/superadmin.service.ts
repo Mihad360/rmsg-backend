@@ -3,6 +3,8 @@ import { RequestStatus } from "../Request/request.interface";
 import { RequestModel } from "../Request/request.model";
 import AppError from "../../erros/AppError";
 import { UserModel } from "../User/user.model";
+import { MemberModel } from "../Member/member.model";
+import { TreeModel } from "../Tree/tree.model";
 
 const updateRequestStatus = async (
   requestId: string,
@@ -276,8 +278,84 @@ const getDashboardStats = async (query: Record<string, unknown>) => {
   };
 };
 
+type ToggleType = "block" | "unblock";
+
+export const toggleBlockUser = async (userId: string, type: ToggleType) => {
+  const user = await UserModel.findById(userId);
+
+  if (!user) {
+    throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
+  }
+
+  // ───────────────────────── BLOCK
+  if (type === "block") {
+    if (user.isDeleted) {
+      throw new AppError(HttpStatus.BAD_REQUEST, "User already blocked.");
+    }
+    // find member
+    const member = await MemberModel.findById(user?.linkedMember);
+
+    await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        isDeleted: true,
+        isActive: false,
+        treeJoinStatus: "unlinked",
+        motherTree: null,
+      },
+      { new: true },
+    );
+    // detach member from tree
+    if (member) {
+      await MemberModel.findByIdAndUpdate(member._id, {
+        parent: null,
+        isDeleted: true,
+        placementStatus: "floating",
+      });
+
+      // optional: reduce tree count safely
+      if (member.tree) {
+        await TreeModel.findByIdAndUpdate(member.tree, {
+          $inc: { totalMembers: -1 },
+        });
+      }
+    }
+
+    return {
+      success: true,
+      message: "User blocked successfully.",
+      // data: updatedUser,
+    };
+  }
+
+  // ───────────────────────── UNBLOCK
+  if (type === "unblock") {
+    if (!user.isDeleted) {
+      throw new AppError(HttpStatus.BAD_REQUEST, "User is not blocked.");
+    }
+
+    await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        isDeleted: false,
+        isActive: true,
+      },
+      { new: true },
+    );
+
+    return {
+      success: true,
+      message: "User unblocked successfully.",
+      // data: updatedUser,
+    };
+  }
+
+  throw new AppError(HttpStatus.BAD_REQUEST, "Invalid action type.");
+};
+
 export const superAdminServices = {
   updateRequestStatus,
   updateRoleAccess,
   getDashboardStats,
+  toggleBlockUser,
 };

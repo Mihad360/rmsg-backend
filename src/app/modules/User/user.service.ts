@@ -24,7 +24,7 @@ const getMe = async (user: JwtPayload) => {
 const getUsers = async (query: Record<string, unknown>) => {
   const userQuery = new QueryBuilder(
     UserModel.find(
-      { isDeleted: false },
+      {},
       "-fcmToken -password -otp -expiresAt -isVerified -passwordChangedAt",
     ),
     query,
@@ -122,7 +122,7 @@ const editProfile = async (
   // =========================
   // FILES
   // =========================
-
+  console.log(files);
   // profile image
   if (files?.image?.[0]) {
     const upload = await sendFileToCloudinary(

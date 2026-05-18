@@ -160,6 +160,7 @@ const getFullTree = async () => {
   const allMembers = await MemberModel.find({
     tree: tree._id,
     isDeleted: false,
+    placementStatus: "placed",
   })
     .select("_id label level relationType parent spouseOf linkedUser")
     .populate("linkedUser", "_id name email role profileImage")
@@ -190,7 +191,7 @@ const getFullTree = async () => {
       }
     }
   }
-
+  console.log(root?.children.length);
   return {
     treeInfo: {
       _id: tree._id,

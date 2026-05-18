@@ -41,6 +41,7 @@ export interface IRequest {
 
   // form steps — each saved independently via PATCH
   bio?: string;
+  jobSpec?: string;
   // jobSpec?: string;
   contact?: IContactInfo;
   education?: IEducation[];

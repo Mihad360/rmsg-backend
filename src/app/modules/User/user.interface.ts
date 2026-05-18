@@ -3,10 +3,10 @@ import { ITree } from "../Tree/tree.interface";
 import { IMember } from "../Member/member.interface";
 import { IContactInfo, IEducation, IExperience } from "../Request/request.interface";
 
-interface ProfileImage {
-  path: string; // e.g., "images/1234567890-profile.jpg"
-  url: string; // e.g., "http://localhost:5000/images/1234567890-profile.jpg"
-}
+// interface ProfileImage {
+//   path: string; // e.g., "images/1234567890-profile.jpg"
+//   url: string; // e.g., "http://localhost:5000/images/1234567890-profile.jpg"
+// }
 
 export interface IUser {
   _id?: Types.ObjectId;

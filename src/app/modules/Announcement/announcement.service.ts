@@ -69,6 +69,7 @@ const getAnnouncements = async (
 
   const filter: Record<string, unknown> = {
     status: { $in: ["pending", "approved", "in_progress"] },
+    isDeleted: false,
   };
 
   if (query.type === "my") {
@@ -143,9 +144,42 @@ const updateAnnouncementStatus = async (
   return updated;
 };
 
+const deleteAnnouncement = async (announcementId: string, user: JwtPayload) => {
+  const existingUser = await UserModel.findById(user.user).lean();
+
+  if (!existingUser) {
+    throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
+  }
+
+  const announcement = await AnnouncementModel.findById(announcementId).lean();
+
+  if (!announcement) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Announcement not found.");
+  }
+
+  // optional ownership check
+  if (announcement.createdBy.toString() !== user.user.toString()) {
+    throw new AppError(
+      HttpStatus.FORBIDDEN,
+      "You are not authorized to delete this announcement.",
+    );
+  }
+
+  const result = await AnnouncementModel.findByIdAndUpdate(
+    announcementId,
+    {
+      isDeleted: true,
+    },
+    { new: true },
+  );
+
+  return result;
+};
+
 export const announcementServices = {
   createAnnouncement,
   getAnnouncements,
   updateAnnouncementStatus,
   getEachAnnouncement,
+  deleteAnnouncement,
 };

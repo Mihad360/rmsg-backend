@@ -61,9 +61,24 @@ const updateAnnouncementStatus = catchAsync(async (req, res) => {
   });
 });
 
+const deleteAnnouncement = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const announcementId = req.params.announcementId;
+
+ const result =  await announcementServices.deleteAnnouncement(announcementId, user);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Announcement deleted successfully",
+    data: result,
+  });
+});
+
 export const announcementControllers = {
   createAnnouncement,
   getAnnouncements,
   updateAnnouncementStatus,
   getEachAnnouncement,
+  deleteAnnouncement,
 };

@@ -40,8 +40,22 @@ const getDashboardStats = catchAsync(async (req, res) => {
   });
 });
 
+const toggleBlockUser = catchAsync(async (req, res) => {
+  const result = await superAdminServices.toggleBlockUser(
+    req.params.userId,
+    req.body.type,
+  );
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Dashboard stats fetched successfully.",
+    data: result,
+  });
+});
+
 export const superAdminControllers = {
   updateRequestStatus,
   updateRoleAccess,
   getDashboardStats,
+  toggleBlockUser,
 };

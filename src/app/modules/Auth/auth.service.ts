@@ -294,7 +294,7 @@ const verifyOtp = async (payload: { email: string; otp: string }) => {
       "3m",
     );
 
-    return { accessToken, email: check.email };
+    return { accessToken, role: check.role, email: check.email };
   }
 };
 

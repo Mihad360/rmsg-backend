@@ -4,6 +4,11 @@ import { superAdminControllers } from "./superadmin.controller";
 
 const router = express.Router();
 
+router.get(
+  "/stats",
+  auth("superAdmin"),
+  superAdminControllers.getDashboardStats,
+);
 router.patch(
   "/requests/update/:requestId",
   auth("admin", "user", "superAdmin"),
@@ -14,10 +19,10 @@ router.patch(
   auth("superAdmin"),
   superAdminControllers.updateRoleAccess,
 );
-router.get(
-  "/stats",
+router.patch(
+  "/block-unblock/:userId",
   auth("superAdmin"),
-  superAdminControllers.getDashboardStats,
+  superAdminControllers.toggleBlockUser,
 );
 
 export const superAdminRoutes = router;

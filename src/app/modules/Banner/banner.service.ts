@@ -49,7 +49,7 @@ const uploadBanner = async (user: JwtPayload, file: Express.Multer.File) => {
         ? lastBanner.activateAt
         : now;
     activateAt = new Date(base);
-    activateAt.setMonth(activateAt.getMonth() + 2);
+    activateAt.setMonth(activateAt.getMonth() + 1);
     isActive = false;
   }
 
@@ -97,7 +97,7 @@ const getActiveBanner = async (user: JwtPayload) => {
 
   const twoMonthsAfterActivation = new Date(activeBanner.activateAt);
 
-  twoMonthsAfterActivation.setMonth(twoMonthsAfterActivation.getMonth() + 2);
+  twoMonthsAfterActivation.setMonth(twoMonthsAfterActivation.getMonth() + 1);
 
   if (now > twoMonthsAfterActivation) {
     throw new AppError(
@@ -109,7 +109,52 @@ const getActiveBanner = async (user: JwtPayload) => {
   return activeBanner;
 };
 
+const deleteBanner = async (user: JwtPayload, bannerId: string) => {
+  const existingUser = await UserModel.findById(user.user).lean();
+
+  if (!existingUser) {
+    throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
+  }
+
+  const banner = await BannerImageModel.findOne({
+    _id: bannerId,
+    isDeleted: false,
+  }).lean();
+
+  if (!banner) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Banner not found.");
+  }
+
+  // soft delete current banner
+  await BannerImageModel.findByIdAndUpdate(bannerId, {
+    isDeleted: true,
+    isActive: false,
+  });
+
+  // if deleted banner was active -> activate next banner
+  if (banner.isActive) {
+    const nextBanner = await BannerImageModel.findOne({
+      isDeleted: false,
+      _id: { $ne: bannerId },
+    })
+      .sort({ activateAt: 1 })
+      .lean();
+
+    if (nextBanner) {
+      await BannerImageModel.findByIdAndUpdate(nextBanner._id, {
+        isActive: true,
+      });
+    }
+  }
+
+  return {
+    success: true,
+    message: "Banner deleted successfully.",
+  };
+};
+
 export const bannerServices = {
   uploadBanner,
   getActiveBanner,
+  deleteBanner,
 };

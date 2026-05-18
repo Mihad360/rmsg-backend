@@ -29,7 +29,23 @@ const getActiveBanner = catchAsync(async (req, res) => {
   });
 });
 
+const deleteBanner = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await bannerServices.deleteBanner(
+    user,
+    req.params.bannerId as string,
+  );
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "OTP verified successfully",
+    data: result,
+  });
+});
+
 export const bannerControllers = {
   uploadBanner,
   getActiveBanner,
+  deleteBanner,
 };

@@ -32,4 +32,5 @@ export interface IAnnouncement {
 
   createdAt?: Date;
   updatedAt?: Date;
+  isDeleted: boolean;
 }

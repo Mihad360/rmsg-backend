@@ -32,5 +32,10 @@ router.patch(
   auth("admin", "superAdmin"),
   announcementControllers.updateAnnouncementStatus,
 );
+router.delete(
+  "/:announcementId",
+  auth("admin", "user", "superAdmin"),
+  announcementControllers.deleteAnnouncement,
+);
 
 export const announcementRoutes = router;

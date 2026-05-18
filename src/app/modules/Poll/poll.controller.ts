@@ -60,9 +60,52 @@ const getPollAnswers = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getPollResults = catchAsync(async (req: Request, res: Response) => {
+  const result = await pollServices.getPollResults(
+    req.user as JwtPayload,
+    req.params.pollId,
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Poll answers fetched successfully.",
+    data: result,
+  });
+});
+
+const updatePoll = catchAsync(async (req: Request, res: Response) => {
+  const result = await pollServices.updatePoll(
+    req.user as JwtPayload,
+    req.params.pollId,
+    req.body,
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Poll updated successfully.",
+    data: result,
+  });
+});
+
+const deletePoll = catchAsync(async (req: Request, res: Response) => {
+  const result = await pollServices.deletePoll(
+    req.user as JwtPayload,
+    req.params.pollId,
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Poll deleted successfully.",
+    data: result,
+  });
+});
+
 export const pollControllers = {
   createPoll,
   getAllPolls,
   answerPoll,
   getPollAnswers,
+  getPollResults,
+  updatePoll,
+  deletePoll,
 };

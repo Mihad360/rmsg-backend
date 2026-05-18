@@ -8,7 +8,8 @@
     "start": "node dist/server.js",
     "lint": "eslint 'src/**/*.{ts,js,json}'",
     "lint:fix": "eslint src --fix",
-    "format": "prettier --write 'src/**/*.{ts,js,json}'"
+    "format": "prettier --write 'src/**/*.{ts,js,json}'",
+    "seed:tree": "ts-node src/seed/tree.seed.ts"
   },
   "keywords": [],
   "author": "",

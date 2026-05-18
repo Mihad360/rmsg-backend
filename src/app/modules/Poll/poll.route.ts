@@ -15,8 +15,23 @@ router.get(
   auth("superAdmin", "user"),
   pollControllers.getPollAnswers,
 );
+router.get(
+  "/:pollId/results",
+  auth("superAdmin"),
+  pollControllers.getPollResults,
+);
 
 router.post("/:pollId/answer", auth("user"), pollControllers.answerPoll);
 router.post("/create", auth("superAdmin"), pollControllers.createPoll);
+router.patch(
+  "/:pollId/update",
+  auth("superAdmin", "user"),
+  pollControllers.updatePoll,
+);
+router.delete(
+  "/:pollId/delete",
+  auth("superAdmin", "user"),
+  pollControllers.deletePoll,
+);
 
 export const pollRoutes = router;

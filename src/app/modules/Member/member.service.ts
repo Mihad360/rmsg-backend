@@ -90,6 +90,141 @@ const requestToJoinMotherTree = async (
   return newMember;
 };
 
+const removeUserFromTree = async (memberId: string) => {
+  const member = await MemberModel.findById(memberId);
+
+  if (!member) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Member not found.");
+  }
+
+  if (member.isTreeRoot) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Root member cannot be detached.",
+    );
+  }
+
+  const hasChildren = await MemberModel.exists({
+    parent: member._id,
+  });
+
+  if (hasChildren) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Cannot detach a member that has children.",
+    );
+  }
+
+  await Promise.all([
+    MemberModel.findByIdAndUpdate(member._id, {
+      parent: null,
+      placementStatus: "floating",
+    }),
+
+    UserModel.findByIdAndUpdate(member.linkedUser, {
+      motherTree: null,
+      treeJoinStatus: "unlinked",
+    }),
+
+    TreeModel.findByIdAndUpdate(member.tree, {
+      $inc: { totalMembers: -1 },
+    }),
+  ]);
+
+  return {
+    success: true,
+  };
+};
+
+const addUserToTree = async (userId: string, motherMemberId: string) => {
+  // 1. Find user
+  const user = await UserModel.findById(userId);
+
+  if (!user) {
+    throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
+  }
+
+  // 2. Prevent duplicate placement
+  if (user.treeJoinStatus === "placed") {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "User is already placed in a tree.",
+    );
+  }
+
+  // 3. Find mother member
+  const motherMember = await MemberModel.findOne({
+    _id: new Types.ObjectId(motherMemberId),
+    isDeleted: false,
+    placementStatus: "placed",
+  });
+
+  if (!motherMember) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Mother member not found.");
+  }
+
+  // 4. Check existing linked member
+  const existingMember = user.linkedMember
+    ? await MemberModel.findById(user.linkedMember)
+    : null;
+
+  let finalMember;
+
+  if (existingMember) {
+    // update existing member (NO SAVE METHOD)
+    finalMember = await MemberModel.findByIdAndUpdate(
+      existingMember._id,
+      {
+        $set: {
+          tree: motherMember.tree,
+          parent: motherMember._id,
+          label: user.name,
+          level: (motherMember.level || 0) + 1,
+          relationType: "blood",
+          placementStatus: "placed",
+          isDeleted: false,
+        },
+      },
+      { new: true },
+    );
+  } else {
+    // create new member
+    finalMember = await MemberModel.create({
+      tree: motherMember.tree,
+      parent: motherMember._id,
+      linkedUser: user._id,
+      label: user.name,
+      level: (motherMember.level || 0) + 1,
+      relationType: "blood",
+      placementStatus: "placed",
+      isTreeRoot: false,
+    });
+  }
+
+  if (!finalMember) {
+    throw new AppError(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to create or update member.",
+    );
+  }
+
+  // 5. Update user
+  await UserModel.findByIdAndUpdate(user._id, {
+    linkedMember: finalMember._id,
+    motherTree: motherMember.tree,
+    treeJoinStatus: "placed",
+  });
+
+  // 6. Update tree count
+  await TreeModel.findByIdAndUpdate(motherMember.tree, {
+    $inc: { totalMembers: 1 },
+  });
+
+  return finalMember;
+};
+
 export const memberServices = {
   requestToJoinMotherTree,
+  removeUserFromTree,
+  addUserToTree,
 };
