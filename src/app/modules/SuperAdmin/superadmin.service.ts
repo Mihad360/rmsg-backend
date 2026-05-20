@@ -115,7 +115,7 @@ const getDashboardStats = async (query: Record<string, unknown>) => {
     {
       $bucket: {
         groupBy: "$age",
-        boundaries: [10, 21, 41, 61, 81, 101],
+        boundaries: [0, 6, 13, 16, 23, 36], // Note: 36 is exclusive upper bound for 35< (will be 36+)
         default: "Other",
         output: { count: { $sum: 1 } },
       },
@@ -126,13 +126,13 @@ const getDashboardStats = async (query: Record<string, unknown>) => {
         range: {
           $switch: {
             branches: [
-              { case: { $eq: ["$_id", 10] }, then: "10-20" },
-              { case: { $eq: ["$_id", 21] }, then: "21-40" },
-              { case: { $eq: ["$_id", 41] }, then: "41-60" },
-              { case: { $eq: ["$_id", 61] }, then: "61-80" },
-              { case: { $eq: ["$_id", 81] }, then: "81-100" },
+              { case: { $eq: ["$_id", 0] }, then: "0-5" },
+              { case: { $eq: ["$_id", 6] }, then: "6-12" },
+              { case: { $eq: ["$_id", 13] }, then: "13-15" },
+              { case: { $eq: ["$_id", 16] }, then: "16-22" },
+              { case: { $eq: ["$_id", 23] }, then: "23-35" },
             ],
-            default: "Other",
+            default: "35<", // Ages 36 and above go here
           },
         },
         count: 1,

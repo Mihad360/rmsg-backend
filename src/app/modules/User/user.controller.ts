@@ -61,9 +61,22 @@ const editProfile = catchAsync(async (req, res) => {
   });
 });
 
+const deleteUser = catchAsync(async (req, res) => {
+  const id = req.params.id;
+  const result = await userServices.deleteUser(id);
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Password reset OTP sent to email",
+    data: result,
+  });
+});
+
 export const userControllers = {
   getMe,
   getUsers,
   editProfile,
   getEachUser,
+  deleteUser,
 };

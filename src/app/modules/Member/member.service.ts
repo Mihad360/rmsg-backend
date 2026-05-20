@@ -137,6 +137,7 @@ const removeUserFromTree = async (memberId: string) => {
 };
 
 const addUserToTree = async (userId: string, motherMemberId: string) => {
+  console.log(userId);
   // 1. Find user
   const user = await UserModel.findById(userId);
 

@@ -200,9 +200,22 @@ const editProfile = async (
   return updatedUser;
 };
 
+const deleteUser = async (id: string) => {
+  const user = await UserModel.findByIdAndUpdate(
+    id,
+    { isDeleted: true },
+    { new: true },
+  );
+  if (!user) {
+    throw new AppError(HttpStatus.NOT_FOUND, "user not deleted");
+  }
+  return user;
+};
+
 export const userServices = {
   getMe,
   getUsers,
   editProfile,
   getEachUser,
+  deleteUser,
 };

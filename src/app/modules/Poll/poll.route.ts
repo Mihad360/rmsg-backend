@@ -21,7 +21,11 @@ router.get(
   pollControllers.getPollResults,
 );
 
-router.post("/:pollId/answer", auth("user"), pollControllers.answerPoll);
+router.post(
+  "/:pollId/answer",
+  auth("user", "admin", "superAdmin"),
+  pollControllers.answerPoll,
+);
 router.post("/create", auth("superAdmin"), pollControllers.createPoll);
 router.patch(
   "/:pollId/update",

@@ -8,6 +8,9 @@ import { superAdminRoutes } from "../modules/SuperAdmin/superadmin.route";
 import { announcementRoutes } from "../modules/Announcement/announcement.route";
 import { bannerRoutes } from "../modules/Banner/banner.route";
 import { pollRoutes } from "../modules/Poll/poll.route";
+import { AboutRoutes } from "../modules/Settings/About/About.route";
+import { PrivacyRoutes } from "../modules/Settings/privacy/Privacy.route";
+import { TermsRoutes } from "../modules/Settings/Terms/Terms.route";
 
 const router = Router();
 
@@ -19,6 +22,18 @@ const moduleRoutes = [
   {
     path: "/auth",
     route: AuthRoutes,
+  },
+  {
+    path: "/about",
+    route: AboutRoutes,
+  },
+  {
+    path: "/privacy",
+    route: PrivacyRoutes,
+  },
+  {
+    path: "/terms",
+    route: TermsRoutes,
   },
   {
     path: "/tree",
