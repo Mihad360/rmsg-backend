@@ -1,39 +1,5 @@
 import { Schema, model } from "mongoose";
-import {
-  IAnnouncement,
-  IAnnouncementGroupFilter,
-} from "./announcement.interface";
-
-const announcementGroupFilterSchema = new Schema<IAnnouncementGroupFilter>(
-  {
-    gender: {
-      type: String,
-      enum: ["male", "female"],
-      default: null,
-    },
-    ageRange: {
-      min: {
-        type: Number,
-        default: null,
-      },
-      max: {
-        type: Number,
-        default: null,
-      },
-    },
-    employmentStatus: {
-      type: String,
-      enum: ["employed", "unemployed"],
-      default: null,
-    },
-    educationLevel: {
-      type: String,
-      enum: ["college", "school"],
-      default: null,
-    },
-  },
-  { _id: false },
-);
+import { IAnnouncement } from "./announcement.interface";
 
 const announcementSchema = new Schema<IAnnouncement>(
   {
@@ -78,19 +44,14 @@ const announcementSchema = new Schema<IAnnouncement>(
       default: "all",
     },
 
-    // groupFilter: {
-    //   type: announcementGroupFilterSchema,
-    //   default: null, // 👈 important
-    // },
-
     targetUsers: {
       type: [Schema.Types.ObjectId],
       ref: "User",
-      default: [], // 👈 always array
+      default: [],
     },
     isDeleted: {
       type: Boolean,
-      default: false, // 👈 always array
+      default: false,
     },
   },
   {

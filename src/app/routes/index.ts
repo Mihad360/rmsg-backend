@@ -11,6 +11,7 @@ import { pollRoutes } from "../modules/Poll/poll.route";
 import { AboutRoutes } from "../modules/Settings/About/About.route";
 import { PrivacyRoutes } from "../modules/Settings/privacy/Privacy.route";
 import { TermsRoutes } from "../modules/Settings/Terms/Terms.route";
+import { notificationRoutes } from "../modules/Notification/notification.route";
 
 const router = Router();
 
@@ -62,6 +63,10 @@ const moduleRoutes = [
   {
     path: "/poll",
     route: pollRoutes,
+  },
+  {
+    path: "/notification",
+    route: notificationRoutes,
   },
 ];
 

@@ -15,7 +15,7 @@ const requestToJoinMotherTree = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Join request submitted successfully",
     data: result,
   });
 });
@@ -27,7 +27,7 @@ const removeUserFromTree = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Member removed from tree successfully",
     data: result,
   });
 });
@@ -40,7 +40,7 @@ const addUserToTree = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Member added to tree successfully",
     data: result,
   });
 });

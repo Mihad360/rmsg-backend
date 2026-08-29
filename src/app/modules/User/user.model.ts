@@ -28,6 +28,10 @@ const userSchema = new Schema<IUser>(
     name: {
       type: String,
     },
+    arabicName: {
+      type: String,
+      match: /^[\u0600-\u06FF\s]+$/,
+    },
     profileImage: {
       type: String,
       default: null,

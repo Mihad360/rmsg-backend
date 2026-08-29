@@ -6,26 +6,18 @@ import { ClientSession } from "mongoose";
 
 export const createNotification = async (
   payload: INotification,
-  session?: ClientSession, // Typing session with Mongoose ClientSession
+  session?: ClientSession,
 ) => {
-  try {
-    if (!payload) {
-      throw new AppError(HttpStatus.NOT_FOUND, "Response not found");
-    }
-
-    // Create notification with session to ensure it's part of the transaction
-    const sendNot = await NotificationModel.create([payload], { session });
-
-    if (!sendNot) {
-      throw new AppError(
-        HttpStatus.BAD_REQUEST,
-        "Notification creation failed",
-      );
-    }
-
-    return sendNot[0];
-  } catch (error) {
-    console.error("Error creating notification:", error);
-    throw new Error("Notification creation failed");
+  if (!payload) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Response not found");
   }
+
+  // pass the session so the write joins the caller's transaction
+  const [notification] = await NotificationModel.create([payload], { session });
+
+  if (!notification) {
+    throw new AppError(HttpStatus.BAD_REQUEST, "Notification creation failed");
+  }
+
+  return notification;
 };

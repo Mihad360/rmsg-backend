@@ -18,10 +18,8 @@ export const sendPushNotifications = async (
     notification: { title, body },
     tokens: tokenArray,
   };
-  console.log(message);
   const response = await admin.messaging().sendEachForMulticast(message);
-  console.log(response);
-  console.log(response.responses[0].error);
+
   // Auto-remove invalid or expired tokens
   response.responses.forEach((res: any, index: any) => {
     if (!res.success) {

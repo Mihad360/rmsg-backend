@@ -16,7 +16,7 @@ const createAnnouncement = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Announcement created successfully",
     data: result,
   });
 });
@@ -28,7 +28,7 @@ const getAnnouncements = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Announcements retrieved successfully",
     meta: result.meta,
     data: result.result,
   });
@@ -41,7 +41,7 @@ const getEachAnnouncement = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Announcement retrieved successfully",
     data: result,
   });
 });
@@ -56,7 +56,7 @@ const updateAnnouncementStatus = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Announcement status updated successfully",
     data: result,
   });
 });
@@ -65,7 +65,10 @@ const deleteAnnouncement = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
   const announcementId = req.params.announcementId;
 
- const result =  await announcementServices.deleteAnnouncement(announcementId, user);
+  const result = await announcementServices.deleteAnnouncement(
+    announcementId,
+    user,
+  );
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,

@@ -291,7 +291,7 @@ const verifyOtp = async (payload: { email: string; otp: string }) => {
     const accessToken = createToken(
       jwtPayload,
       config.JWT_SECRET_KEY as string,
-      "3m",
+      config.JWT_ACCESS_EXPIRES_IN as string,
     );
 
     return { accessToken, role: check.role, email: check.email };

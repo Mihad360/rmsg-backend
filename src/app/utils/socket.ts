@@ -61,7 +61,7 @@ export const initSocketIO = async (server: HttpServer): Promise<void> => {
     const token =
       (socket.handshake.headers.token as string) ||
       (socket.handshake.auth.token as string);
-    console.log(token);
+
     if (!token) {
       return next(new AppError(HttpStatus.UNAUTHORIZED, "Token missing"));
     }

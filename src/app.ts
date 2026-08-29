@@ -35,7 +35,7 @@ app.get("/", (req: Request, res: Response) => {
   res.status(200).send(template);
 });
 
-app.use(globalErrorHandler);
 app.use(notFound);
+app.use(globalErrorHandler);
 
 export default app;

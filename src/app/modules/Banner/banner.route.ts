@@ -6,6 +6,11 @@ import { upload } from "../../utils/sendImageToCloudinary";
 const router = express.Router();
 
 router.get(
+  "/all",
+  auth("admin", "superAdmin"),
+  bannerControllers.getAllBanners,
+);
+router.get(
   "/",
   auth("user", "admin", "superAdmin"),
   bannerControllers.getActiveBanner,

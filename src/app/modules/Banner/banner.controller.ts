@@ -12,19 +12,29 @@ const uploadBanner = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Banner uploaded successfully",
+    data: result,
+  });
+});
+
+const getAllBanners = catchAsync(async (req, res) => {
+  const result = await bannerServices.getAllBanners();
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Banners retrieved successfully",
     data: result,
   });
 });
 
 const getActiveBanner = catchAsync(async (req, res) => {
-  const user = req.user as JwtPayload;
-  const result = await bannerServices.getActiveBanner(user);
+  const result = await bannerServices.getActiveBanner();
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Active banner retrieved successfully",
     data: result,
   });
 });
@@ -39,7 +49,7 @@ const deleteBanner = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Banner deleted successfully",
     data: result,
   });
 });
@@ -48,4 +58,5 @@ export const bannerControllers = {
   uploadBanner,
   getActiveBanner,
   deleteBanner,
+  getAllBanners,
 };

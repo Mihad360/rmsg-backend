@@ -1,7 +1,11 @@
 import { Model, Types } from "mongoose";
 import { ITree } from "../Tree/tree.interface";
 import { IMember } from "../Member/member.interface";
-import { IContactInfo, IEducation, IExperience } from "../Request/request.interface";
+import {
+  IContactInfo,
+  IEducation,
+  IExperience,
+} from "../Request/request.interface";
 
 // interface ProfileImage {
 //   path: string; // e.g., "images/1234567890-profile.jpg"
@@ -18,6 +22,7 @@ export interface IUser {
 
   // profile
   name?: string;
+  arabicName?: string; // Arabic name
   profileImage?: string;
   phone?: string;
   // 🌍 location (Saudi-based structure)

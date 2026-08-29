@@ -8,7 +8,7 @@ import QueryBuilder from "../../../builder/QueryBuilder";
 import { IUser } from "./user.interface";
 import { sendFileToCloudinary } from "../../utils/sendImageToCloudinary";
 
-const searchUsers = ["name", "phone", "address", ""];
+const searchUsers = ["name", "phone", "address"];
 
 const getMe = async (user: JwtPayload) => {
   const userId = new Types.ObjectId(user.user);
@@ -22,18 +22,28 @@ const getMe = async (user: JwtPayload) => {
 };
 
 const getUsers = async (query: Record<string, unknown>) => {
+  const modifiedQuery = { ...query };
+
+  if (modifiedQuery.fieldOfWork) {
+    modifiedQuery.fieldOfWork = {
+      $regex: modifiedQuery.fieldOfWork,
+      $options: "i",
+    };
+  }
+
   const userQuery = new QueryBuilder(
     UserModel.find(
       {},
       "-fcmToken -password -otp -expiresAt -isVerified -passwordChangedAt",
     ),
-    query,
+    modifiedQuery,
   )
     .search(searchUsers)
     .filter()
     .sort()
     .paginate()
     .fields();
+
   const meta = await userQuery.countTotal();
   const result = await userQuery.modelQuery;
   return { meta, result };
@@ -122,7 +132,6 @@ const editProfile = async (
   // =========================
   // FILES
   // =========================
-  console.log(files);
   // profile image
   if (files?.image?.[0]) {
     const upload = await sendFileToCloudinary(

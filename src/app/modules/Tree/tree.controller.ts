@@ -6,12 +6,12 @@ import { JwtPayload } from "../../interface/global";
 
 const getMyTree = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
-  const result = await treeServices.getMyTree(user, req.query);
+  const result = await treeServices.getMyTree(user);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Tree retrieved successfully",
     data: result,
   });
 });
@@ -23,18 +23,18 @@ const getTree = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Tree retrieved successfully",
     data: result,
   });
 });
 
 const getFullTree = catchAsync(async (req, res) => {
-  const result = await treeServices.getFullTree();
+  const result = await treeServices.getFullTree(req.query);
 
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "OTP verified successfully",
+    message: "Full tree retrieved successfully",
     data: result,
   });
 });

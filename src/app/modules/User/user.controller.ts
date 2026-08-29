@@ -10,7 +10,7 @@ const getMe = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Password reset OTP sent to email",
+    message: "Profile retrieved successfully",
     data: result,
   });
 });
@@ -21,7 +21,7 @@ const getUsers = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Password reset OTP sent to email",
+    message: "Users retrieved successfully",
     meta: result.meta,
     data: result.result,
   });
@@ -34,15 +34,13 @@ const getEachUser = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Password reset OTP sent to email",
+    message: "User retrieved successfully",
     data: result,
   });
 });
 
 const editProfile = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
-  console.log(req.body);
-  console.log(req.files);
   const id = user.user as string;
 
   const files = req.files as {
@@ -68,7 +66,7 @@ const deleteUser = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Password reset OTP sent to email",
+    message: "User deleted successfully",
     data: result,
   });
 });

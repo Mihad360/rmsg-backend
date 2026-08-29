@@ -180,34 +180,51 @@ const getPollAnswers = async (user: JwtPayload, pollId: string) => {
   const poll = await PollModel.findById(pollId)
     .populate("createdBy", "_id name profileImage")
     .lean();
+
   if (!poll) {
     throw new AppError(HttpStatus.NOT_FOUND, "Poll not found.");
   }
 
-  // selector branch
+  // Selector Poll
   if (poll.answerType === "selector") {
-    const [userAnswer, answerCounts] = await Promise.all([
-      PollAnswerModel.findOne({ poll: pollId, user: user.user }).lean(),
+    const [userAnswer, answerCounts, responses] = await Promise.all([
+      PollAnswerModel.findOne({
+        poll: pollId,
+        user: user.user,
+      }).lean(),
+
       PollAnswerModel.aggregate([
         { $match: { poll: new Types.ObjectId(pollId) } },
-        { $group: { _id: "$optionId", count: { $sum: 1 } } },
+        {
+          $group: {
+            _id: "$optionId",
+            count: { $sum: 1 },
+          },
+        },
       ]),
+
+      PollAnswerModel.find({ poll: pollId })
+        .populate("user", "_id name profileImage")
+        .sort({ createdAt: -1 })
+        .lean(),
     ]);
 
     const countMap = new Map(
       answerCounts.map((a) => [a._id?.toString(), a.count]),
     );
 
-    const options = poll.options?.map((opt) => {
-      const count = countMap.get(opt._id!.toString()) ?? 0;
-      const total = poll.totalResponses ?? 0;
-      return {
-        _id: opt._id,
-        text: opt.text,
-        count,
-        percentage: total > 0 ? Math.round((count / total) * 100) : 0,
-      };
-    });
+    const options =
+      poll.options?.map((opt) => {
+        const count = countMap.get(opt._id!.toString()) ?? 0;
+        const total = poll.totalResponses ?? 0;
+
+        return {
+          _id: opt._id,
+          text: opt.text,
+          count,
+          percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+        };
+      }) ?? [];
 
     return {
       _id: poll._id,
@@ -218,14 +235,26 @@ const getPollAnswers = async (user: JwtPayload, pollId: string) => {
       options,
       answered: !!userAnswer,
       myAnswer: userAnswer ? { optionId: userAnswer.optionId } : null,
+      responses: responses.map((item) => ({
+        user: item.user,
+        optionId: item.optionId,
+        answeredAt: item.createdAt,
+      })),
     };
   }
 
-  // write-in branch – only the user's own answer as a string
-  const userAnswer = await PollAnswerModel.findOne({
-    poll: pollId,
-    user: user.user,
-  }).lean();
+  // Write-in Poll
+  const [userAnswer, responses] = await Promise.all([
+    PollAnswerModel.findOne({
+      poll: pollId,
+      user: user.user,
+    }).lean(),
+
+    PollAnswerModel.find({ poll: pollId })
+      .populate("user", "_id name profileImage")
+      .sort({ createdAt: -1 })
+      .lean(),
+  ]);
 
   return {
     _id: poll._id,
@@ -234,11 +263,14 @@ const getPollAnswers = async (user: JwtPayload, pollId: string) => {
     answerType: poll.answerType,
     totalResponses: poll.totalResponses ?? 0,
     answered: !!userAnswer,
-    answer: userAnswer ? userAnswer.answer : null, // plain string, not an object
+    answer: userAnswer ? userAnswer.answer : null,
+    responses: responses.map((item) => ({
+      user: item.user,
+      answer: item.answer,
+      answeredAt: item.createdAt,
+    })),
   };
 };
-
-// poll.services.ts - add this new function
 
 const getPollResults = async (user: JwtPayload, pollId: string) => {
   const existingUser = await UserModel.findById(user.user).lean();

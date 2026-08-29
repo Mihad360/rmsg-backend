@@ -29,28 +29,25 @@ const uploadBanner = async (user: JwtPayload, file: Express.Multer.File) => {
     );
   }
 
-  // find last banner to calculate next activateAt
-  const lastBanner = await BannerImageModel.findOne({ isDeleted: false })
+  // find latest scheduled banner
+  const lastBanner = await BannerImageModel.findOne({
+    isDeleted: false,
+  })
     .sort({ activateAt: -1 })
     .lean();
 
   const now = new Date();
+
   let activateAt: Date;
-  let isActive: boolean;
+  let isActive = false;
 
   if (!lastBanner) {
-    // first banner ever → active immediately
+    // first banner
     activateAt = now;
     isActive = true;
   } else {
-    // next banner activates 2 months after the last scheduled one
-    const base =
-      lastBanner.activateAt && lastBanner.activateAt > now
-        ? lastBanner.activateAt
-        : now;
-    activateAt = new Date(base);
+    activateAt = new Date(lastBanner.activateAt!);
     activateAt.setMonth(activateAt.getMonth() + 1);
-    isActive = false;
   }
 
   const banner = await BannerImageModel.create({
@@ -63,54 +60,31 @@ const uploadBanner = async (user: JwtPayload, file: Express.Multer.File) => {
   return banner;
 };
 
-const getActiveBanner = async (user: JwtPayload) => {
-  const now = new Date();
-
-  // if super admin -> return all banners newest first
-  if (user.role === "superAdmin") {
-    const banners = await BannerImageModel.find({
-      isDeleted: false,
-    })
-      .sort({ createdAt: -1 })
-      .lean();
-
-    return banners;
-  }
-
-  // normal users -> only active banner
-  const activeBanner = await BannerImageModel.findOne({
-    isActive: true,
+const getAllBanners = async () => {
+  const banners = await BannerImageModel.find({
     isDeleted: false,
+  })
+    .sort({ activateAt: 1 }) // earliest activation first
+    .lean();
+
+  return banners;
+};
+
+const getActiveBanner = async () => {
+  const activeBanner = await BannerImageModel.findOne({
+    isDeleted: false,
+    isActive: true,
   }).lean();
 
   if (!activeBanner) {
     throw new AppError(HttpStatus.NOT_FOUND, "No active banner found.");
   }
 
-  // verify active banner validity
-  if (!activeBanner.activateAt) {
-    throw new AppError(
-      HttpStatus.BAD_REQUEST,
-      "Banner activation date missing.",
-    );
-  }
-
-  const twoMonthsAfterActivation = new Date(activeBanner.activateAt);
-
-  twoMonthsAfterActivation.setMonth(twoMonthsAfterActivation.getMonth() + 1);
-
-  if (now > twoMonthsAfterActivation) {
-    throw new AppError(
-      HttpStatus.NOT_FOUND,
-      "Active banner has expired. Next banner not yet activated.",
-    );
-  }
-
   return activeBanner;
 };
 
 const deleteBanner = async (user: JwtPayload, bannerId: string) => {
-  const existingUser = await UserModel.findById(user.user).lean();
+  const existingUser = await UserModel.findById(user.user);
 
   if (!existingUser) {
     throw new AppError(HttpStatus.NOT_FOUND, "User not found.");
@@ -119,33 +93,16 @@ const deleteBanner = async (user: JwtPayload, bannerId: string) => {
   const banner = await BannerImageModel.findOne({
     _id: bannerId,
     isDeleted: false,
-  }).lean();
+  });
 
   if (!banner) {
     throw new AppError(HttpStatus.NOT_FOUND, "Banner not found.");
   }
 
-  // soft delete current banner
   await BannerImageModel.findByIdAndUpdate(bannerId, {
     isDeleted: true,
     isActive: false,
   });
-
-  // if deleted banner was active -> activate next banner
-  if (banner.isActive) {
-    const nextBanner = await BannerImageModel.findOne({
-      isDeleted: false,
-      _id: { $ne: bannerId },
-    })
-      .sort({ activateAt: 1 })
-      .lean();
-
-    if (nextBanner) {
-      await BannerImageModel.findByIdAndUpdate(nextBanner._id, {
-        isActive: true,
-      });
-    }
-  }
 
   return {
     success: true,
@@ -157,4 +114,5 @@ export const bannerServices = {
   uploadBanner,
   getActiveBanner,
   deleteBanner,
+  getAllBanners,
 };

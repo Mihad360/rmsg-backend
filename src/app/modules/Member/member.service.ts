@@ -35,14 +35,16 @@ const requestToJoinMotherTree = async (
       "User already has a pending join request.",
     );
   }
-  console.log(motherTreeMemberId);
   // ── 3. Find the selected mother tree member
   //       Must be a tree root, placed, and not deleted
-  const motherMember = await MemberModel.findOne({
+  const motherMember = (await MemberModel.findOne({
     _id: new Types.ObjectId(motherTreeMemberId),
     isDeleted: false,
     placementStatus: "placed",
-  }).lean();
+  })
+    .populate("linkedUser", "name phone")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .lean()) as any;
 
   if (!motherMember) {
     throw new AppError(
@@ -137,7 +139,6 @@ const removeUserFromTree = async (memberId: string) => {
 };
 
 const addUserToTree = async (userId: string, motherMemberId: string) => {
-  console.log(userId);
   // 1. Find user
   const user = await UserModel.findById(userId);
 
@@ -154,11 +155,14 @@ const addUserToTree = async (userId: string, motherMemberId: string) => {
   }
 
   // 3. Find mother member
-  const motherMember = await MemberModel.findOne({
+  const motherMember = (await MemberModel.findOne({
     _id: new Types.ObjectId(motherMemberId),
     isDeleted: false,
     placementStatus: "placed",
-  });
+  })
+    .populate("linkedUser", "name phone")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .lean()) as any;
 
   if (!motherMember) {
     throw new AppError(HttpStatus.NOT_FOUND, "Mother member not found.");
