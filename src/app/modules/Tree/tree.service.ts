@@ -154,7 +154,7 @@ const getTree = async (memberId: string, query: Record<string, unknown>) => {
 const getFullTree = async (query: Record<string, unknown> = {}) => {
   const tree = await TreeModel.findOne({ isDeleted: false, isDefault: true })
     .select("_id name totalMembers isDefault rootMember createdBy")
-    .populate("createdBy", "_id name email role profileImage")
+    .populate("createdBy", "_id name arabicName email role profileImage")
     .lean();
 
   if (!tree) {
@@ -167,7 +167,7 @@ const getFullTree = async (query: Record<string, unknown> = {}) => {
     placementStatus: "placed",
   })
     .select("_id label level relationType parent spouseOf linkedUser")
-    .populate("linkedUser", "_id name email role profileImage")
+    .populate("linkedUser", "_id name arabicName email role profileImage")
     .sort({ createdAt: 1 })
     .lean();
 
