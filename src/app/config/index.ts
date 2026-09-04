@@ -1,6 +1,15 @@
 import dotenv from "dotenv";
 import path from "path";
 
+const NODE_ENV = process.env.NODE_ENV || "development";
+
+// Load environment-specific .env file (.env.development or .env.production)
+// Falls back to .env if no environment-specific file exists
+dotenv.config({
+  path: path.join(process.cwd(), `.env.${NODE_ENV}`),
+  override: true,
+});
+// Also load base .env as fallback for any missing keys
 dotenv.config({
   path: path.join(process.cwd(), ".env"),
 });
