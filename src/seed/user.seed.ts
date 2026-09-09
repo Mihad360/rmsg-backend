@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import config from "../app/config";
-import { seedTree } from "../app/DB/seedTree";
+import { seedUsers } from "../app/DB/seedUsers";
 
 const run = async () => {
   try {
@@ -10,13 +10,13 @@ const run = async () => {
     });
     console.log("Connected to MongoDB.");
 
-    await seedTree();
+    await seedUsers();
 
-    console.log("🎉 Tree seeding process completed successfully.");
+    console.log("🎉 User seeding script finished execution.");
     await mongoose.disconnect();
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error during tree seeding script execution:", error);
+    console.error("❌ Error running user seeding script:", error);
     await mongoose.disconnect();
     process.exit(1);
   }

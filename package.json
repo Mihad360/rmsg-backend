@@ -10,7 +10,9 @@
     "lint": "eslint 'src/**/*.{ts,js,json}'",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write 'src/**/*.{ts,js,json}'",
-    "seed:tree": "ts-node src/seed/tree.seed.ts"
+    "seed:tree": "ts-node src/seed/tree.seed.ts",
+    "delete:tree": "ts-node src/seed/tree.delete.ts",
+    "seed:users": "ts-node src/seed/user.seed.ts"
   },
   "keywords": [],
   "author": "",
