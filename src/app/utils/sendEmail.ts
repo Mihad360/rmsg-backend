@@ -25,6 +25,15 @@ export const sendEmail = async (
         pass: config.NODE_MAIL_PASS,
       },
     });
+    // const transporter = nodemailer.createTransport({
+    //   host: "smtp.hostinger.com",
+    //   port: 465,
+    //   secure: true,
+    //   auth: {
+    //     user: config.NODE_MAIL_EMAIL,
+    //     pass: config.NODE_MAIL_PASS,
+    //   },
+    // });
 
     const info = await transporter.sendMail({
       from: `"..." <${config.NODE_MAIL_EMAIL}>`,
