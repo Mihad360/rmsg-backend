@@ -11,7 +11,7 @@ router.get(
 );
 router.get(
   "/full",
-  auth("user", "superAdmin", "admin"),
+  // auth("user", "superAdmin", "admin"),
   treeControllers.getFullTree,
 );
 router.get(
