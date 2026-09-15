@@ -2,6 +2,8 @@ import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 import multer, { StorageEngine } from "multer";
 import path from "path";
 import sharp from "sharp";
+import { PDFDocument } from "pdf-lib";
+import JSZip from "jszip";
 import config from "../config";
 
 // Cloudinary config
@@ -13,7 +15,7 @@ cloudinary.config({
 
 /**
  * Image optimization guard:
- * - Resizes images with dimensions exceeding 2048x2048 (preserving aspect ratio, without upscaling)
+ * - Resizes images exceeding 2048x2048 (preserving aspect ratio, without upscaling)
  * - Auto-orients image based on EXIF orientation
  * - Compresses to high-quality WebP (85% quality) to significantly reduce size while preserving crystal-clear resolution
  * - Bypasses SVGs and animated GIFs to prevent distortion
@@ -53,6 +55,57 @@ export const optimizeImageBuffer = async (
       error,
     );
     return { buffer, mimetype };
+  }
+};
+
+/**
+ * PDF optimization guard:
+ * - Compresses PDF objects and cross-reference streams using PDF object streams
+ * - Cleans metadata overhead and redundant structures while preserving 100% document quality
+ */
+export const optimizePdfBuffer = async (buffer: Buffer): Promise<Buffer> => {
+  try {
+    const pdfDoc = await PDFDocument.load(buffer, {
+      ignoreEncryption: true,
+      updateMetadata: false,
+    });
+    const savedBytes = await pdfDoc.save({
+      useObjectStreams: true,
+      addDefaultPage: false,
+    });
+    const optimizedBuffer = Buffer.from(savedBytes);
+    return optimizedBuffer.length < buffer.length ? optimizedBuffer : buffer;
+  } catch (error) {
+    console.warn(
+      "PDF optimization skipped due to error, proceeding with original buffer:",
+      error,
+    );
+    return buffer;
+  }
+};
+
+/**
+ * DOCX optimization guard:
+ * - Re-compresses OpenXML package components using maximum DEFLATE (level 9)
+ * - Reduces docx container size without altering document contents or formatting
+ */
+export const optimizeDocxBuffer = async (buffer: Buffer): Promise<Buffer> => {
+  try {
+    const zip = await JSZip.loadAsync(buffer);
+    const compressed = await zip.generateAsync({
+      type: "nodebuffer",
+      compression: "DEFLATE",
+      compressionOptions: {
+        level: 9,
+      },
+    });
+    return compressed.length < buffer.length ? compressed : buffer;
+  } catch (error) {
+    console.warn(
+      "DOCX optimization skipped due to error, proceeding with original buffer:",
+      error,
+    );
+    return buffer;
   }
 };
 
@@ -99,7 +152,7 @@ export const sendFileToCloudinary = async (
   }
 
   // ============================
-  // 2️⃣ PDF + WORD Uploads (raw)
+  // 2️⃣ PDF + WORD Uploads (with compression guard)
   // ============================
   else if (
     mimetype === "application/pdf" ||
@@ -109,6 +162,18 @@ export const sendFileToCloudinary = async (
   ) {
     const ext = path.extname(fileName);
     const safeName = nameWithoutExt.replace(/[^a-zA-Z0-9-_]/g, "");
+
+    let processedBuffer = fileBuffer;
+
+    if (mimetype === "application/pdf" || ext.toLowerCase() === ".pdf") {
+      processedBuffer = await optimizePdfBuffer(fileBuffer);
+    } else if (
+      mimetype ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      ext.toLowerCase() === ".docx"
+    ) {
+      processedBuffer = await optimizeDocxBuffer(fileBuffer);
+    }
 
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
@@ -123,7 +188,7 @@ export const sendFileToCloudinary = async (
           return resolve(result);
         },
       );
-      uploadStream.end(fileBuffer);
+      uploadStream.end(processedBuffer);
     });
   }
 
