@@ -16,17 +16,8 @@ export const sendEmail = async (
     };
   }
   try {
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: config.NODE_MAIL_EMAIL,
-        pass: config.NODE_MAIL_PASS,
-      },
-    });
     // const transporter = nodemailer.createTransport({
-    //   host: "smtp.hostinger.com",
+    //   host: "smtp.gmail.com",
     //   port: 465,
     //   secure: true,
     //   auth: {
@@ -35,11 +26,24 @@ export const sendEmail = async (
     //   },
     // });
 
+    const transporter = nodemailer.createTransport({
+      host: "smtp.hostinger.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: config.NODE_MAIL_EMAIL,
+        pass: config.NODE_MAIL_PASS,
+      },
+    });
+
+    const plainText = html.replace(/<[^>]*>/g, "").trim();
+
     const info = await transporter.sendMail({
-      from: `"..." <${config.NODE_MAIL_EMAIL}>`,
+      from: `"Masic Generation" <${config.NODE_MAIL_EMAIL}>`,
+      replyTo: config.NODE_MAIL_EMAIL,
       to,
       subject,
-      text: "",
+      text: plainText,
       html,
     });
 
