@@ -29,7 +29,7 @@ const getAllRequests = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Password reset OTP sent to email",
+    message: "Requests retrieved successfully",
     meta: result.meta,
     data: result.result,
   });

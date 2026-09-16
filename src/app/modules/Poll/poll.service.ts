@@ -8,6 +8,9 @@ import { UserModel } from "../User/user.model";
 import { IPoll } from "./poll.interface";
 import { PollAnswerModel, PollModel } from "./poll.model";
 import QueryBuilder from "../../../builder/QueryBuilder";
+import { INotification } from "../Notification/notification.interface";
+import { createMultipleNotifications } from "../Notification/notification.utils";
+import { sendPushNotifications } from "../../utils/firebase/notification";
 
 const createPoll = async (user: JwtPayload, payload: IPoll) => {
   const existingUser = await UserModel.findById(user.user).lean();
@@ -33,6 +36,39 @@ const createPoll = async (user: JwtPayload, payload: IPoll) => {
     createdBy: user.user,
     totalResponses: 0,
   });
+
+  // 🔥 Send In-App Notifications & FCM Push Notifications to users
+  try {
+    const recipientUsers = await UserModel.find({
+      _id: { $ne: new Types.ObjectId(user.user) },
+      isDeleted: false,
+    }).select("_id fcmToken");
+
+    if (recipientUsers.length > 0) {
+      const notifTitle = "New Poll";
+      const notifMessage = payload.title;
+
+      const notifications: INotification[] = recipientUsers.map((rec) => ({
+        sender: new Types.ObjectId(user.user),
+        recipient: rec._id,
+        type: "poll",
+        title: notifTitle,
+        message: notifMessage,
+      }));
+
+      await createMultipleNotifications(notifications);
+
+      const tokens = recipientUsers
+        .flatMap((u) => u.fcmToken || [])
+        .filter((t): t is string => typeof t === "string" && t.trim().length > 0);
+
+      if (tokens.length > 0) {
+        await sendPushNotifications(tokens, notifTitle, notifMessage);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to send poll notification:", error);
+  }
 
   return poll;
 };

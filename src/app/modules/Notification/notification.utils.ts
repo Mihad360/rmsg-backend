@@ -21,3 +21,18 @@ export const createNotification = async (
 
   return notification;
 };
+
+export const createMultipleNotifications = async (
+  payloads: INotification[],
+  session?: ClientSession,
+) => {
+  if (!payloads || payloads.length === 0) {
+    return [];
+  }
+
+  const notifications = await NotificationModel.insertMany(payloads, {
+    session,
+  });
+
+  return notifications;
+};

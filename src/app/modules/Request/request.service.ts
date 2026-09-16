@@ -7,6 +7,9 @@ import { RequestModel } from "./request.model";
 import { sendFileToCloudinary } from "../../utils/sendImageToCloudinary";
 import { Types } from "mongoose";
 import QueryBuilder from "../../../builder/QueryBuilder";
+import { INotification } from "../Notification/notification.interface";
+import { createMultipleNotifications } from "../Notification/notification.utils";
+import { sendPushNotifications } from "../../utils/firebase/notification";
 
 const createRequest = async (
   user: JwtPayload,
@@ -67,6 +70,46 @@ const createRequest = async (
     ...(cvUrl && { cvUrl }),
     ...(certificateUrl && { certificateUrl }),
   });
+
+  // 🔥 Send In-App Notifications & FCM Push Notifications to Admins and SuperAdmins
+  try {
+    const admins = await UserModel.find({
+      role: { $in: ["admin", "superAdmin"] },
+      isDeleted: false,
+    }).select("_id fcmToken");
+
+    if (admins.length > 0) {
+      const typeLabel =
+        payload.type === "job"
+          ? "Job"
+          : payload.type === "volunteering"
+          ? "Volunteering"
+          : "New";
+      const userName = existingUser.name || existingUser.email || "A user";
+      const notifTitle = `New ${typeLabel} Request`;
+      const notifMessage = `${userName} has submitted a new ${payload.type} request.`;
+
+      const notifications: INotification[] = admins.map((admin) => ({
+        sender: new Types.ObjectId(user.user),
+        recipient: admin._id,
+        type: "job_request",
+        title: notifTitle,
+        message: notifMessage,
+      }));
+
+      await createMultipleNotifications(notifications);
+
+      const adminTokens = admins
+        .flatMap((admin) => admin.fcmToken || [])
+        .filter((t): t is string => typeof t === "string" && t.trim().length > 0);
+
+      if (adminTokens.length > 0) {
+        await sendPushNotifications(adminTokens, notifTitle, notifMessage);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to send job request notification to admins:", error);
+  }
 
   return request;
 };

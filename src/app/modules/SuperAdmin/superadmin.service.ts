@@ -6,6 +6,10 @@ import { UserModel } from "../User/user.model";
 import { MemberModel } from "../Member/member.model";
 import { TreeModel } from "../Tree/tree.model";
 
+import { Types } from "mongoose";
+import { createNotification } from "../Notification/notification.utils";
+import { sendPushNotifications } from "../../utils/firebase/notification";
+
 const updateRequestStatus = async (
   requestId: string,
   payload: {
@@ -47,6 +51,44 @@ const updateRequestStatus = async (
     },
     { new: true },
   ).lean();
+
+  // 🔥 Notify requester on status update
+  try {
+    const requester = await UserModel.findById(request.user).select(
+      "_id name fcmToken",
+    );
+    if (requester) {
+      const formattedStatus = payload.status.replace(/_/g, " ");
+      const notifTitle = `Request ${formattedStatus.toUpperCase()}`;
+      let notifMessage = `Your ${request.type} request has been ${formattedStatus}.`;
+
+      if (payload.status === "declined" && payload.declineReason) {
+        notifMessage += ` Reason: ${payload.declineReason}`;
+      } else if (
+        payload.status === "additional_info_required" &&
+        payload.additionalInfoRequest
+      ) {
+        notifMessage = `Additional info required for your ${request.type} request: ${payload.additionalInfoRequest}`;
+      }
+
+      await createNotification({
+        sender: requester._id,
+        recipient: requester._id,
+        type: "request_status",
+        title: notifTitle,
+        message: notifMessage,
+      });
+
+      const userTokens = (requester.fcmToken || []).filter(
+        (t): t is string => typeof t === "string" && t.trim().length > 0,
+      );
+      if (userTokens.length > 0) {
+        await sendPushNotifications(userTokens, notifTitle, notifMessage);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to send request status update notification:", error);
+  }
 
   return updated;
 };

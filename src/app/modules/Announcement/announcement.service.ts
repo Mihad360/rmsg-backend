@@ -7,6 +7,9 @@ import { AnnouncementStatus, IAnnouncement } from "./announcement.interface";
 import { AnnouncementModel } from "./announcement.model";
 import QueryBuilder from "../../../builder/QueryBuilder";
 import { Types } from "mongoose";
+import { INotification } from "../Notification/notification.interface";
+import { createMultipleNotifications } from "../Notification/notification.utils";
+import { sendPushNotifications } from "../../utils/firebase/notification";
 
 const createAnnouncement = async (
   user: JwtPayload,
@@ -54,6 +57,53 @@ const createAnnouncement = async (
       ...(bannerUrl && { bannerUrl }),
     },
   ]);
+
+  // 🔥 Send In-App Notifications & FCM Push Notifications
+  try {
+    let recipientUsers: { _id: Types.ObjectId; fcmToken?: string[] }[] = [];
+
+    if (
+      payload.targetType === "group" &&
+      payload.targetUsers &&
+      payload.targetUsers.length > 0
+    ) {
+      recipientUsers = await UserModel.find({
+        _id: { $in: payload.targetUsers.map((id) => new Types.ObjectId(id)) },
+        isDeleted: false,
+      }).select("_id fcmToken");
+    } else {
+      recipientUsers = await UserModel.find({
+        _id: { $ne: new Types.ObjectId(user.user) },
+        isDeleted: false,
+      }).select("_id fcmToken");
+    }
+
+    if (recipientUsers.length > 0) {
+      const notifTitle = `New Announcement: ${payload.title}`;
+      const notifMessage = payload.description || payload.title;
+
+      const notifications: INotification[] = recipientUsers.map((rec) => ({
+        sender: new Types.ObjectId(user.user),
+        recipient: rec._id,
+        type: "announcement",
+        title: notifTitle,
+        message: notifMessage,
+      }));
+
+      await createMultipleNotifications(notifications);
+
+      const tokens = recipientUsers
+        .flatMap((u) => u.fcmToken || [])
+        .filter((t): t is string => typeof t === "string" && t.trim().length > 0);
+
+      if (tokens.length > 0) {
+        await sendPushNotifications(tokens, notifTitle, notifMessage);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to send announcement notification:", error);
+  }
+
   return announcement;
 };
 

@@ -8,25 +8,25 @@ const router = express.Router();
 
 router.get(
   "/",
-  auth("user", "admin"),
+  auth("user", "admin", "superAdmin"),
   notificationControllers.getMyNotifications,
 );
 
 router.patch(
   "/:id/read",
-  auth("user", "admin"),
+  auth("user", "admin", "superAdmin"),
   notificationControllers.markAsRead,
 );
 
 router.patch(
   "/read-all",
-  auth("user", "admin"),
+  auth("user", "admin", "superAdmin"),
   notificationControllers.markAllAsRead,
 );
 
 router.get(
   "/unread-count",
-  auth("user", "admin"),
+  auth("user", "admin", "superAdmin"),
   notificationControllers.getUnreadCount,
 );
 

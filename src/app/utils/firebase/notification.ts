@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
+import { UserModel } from "../../modules/User/user.model";
 import admin from "./firebase";
 
 export const sendPushNotifications = async (
@@ -9,31 +9,52 @@ export const sendPushNotifications = async (
 ) => {
   if (!tokens) return;
 
-  // 🔥 Normalize to array
-  const tokenArray: string[] = Array.isArray(tokens) ? tokens : [tokens];
+  // 🔥 Normalize to unique valid array
+  const rawTokens: string[] = Array.isArray(tokens) ? tokens : [tokens];
+  const tokenArray = [
+    ...new Set(
+      rawTokens.filter(
+        (t) => typeof t === "string" && t.trim().length > 0,
+      ),
+    ),
+  ];
 
   if (tokenArray.length === 0) return;
 
-  const message = {
-    notification: { title, body },
-    tokens: tokenArray,
-  };
-  const response = await admin.messaging().sendEachForMulticast(message);
+  try {
+    const message = {
+      notification: { title, body },
+      tokens: tokenArray,
+    };
+    const response = await admin.messaging().sendEachForMulticast(message);
 
-  // Auto-remove invalid or expired tokens
-  response.responses.forEach((res: any, index: any) => {
-    if (!res.success) {
-      const errorCode = res.error?.code;
+    const invalidTokens: string[] = [];
 
-      if (
-        errorCode === "messaging/registration-token-not-registered" ||
-        errorCode === "messaging/invalid-registration-token"
-      ) {
-        console.log("Removing invalid token:", tokenArray[index]);
-        // Remove token from DB here
+    // Auto-remove invalid or expired tokens
+    response.responses.forEach((res: any, index: number) => {
+      if (!res.success) {
+        const errorCode = res.error?.code;
+
+        if (
+          errorCode === "messaging/registration-token-not-registered" ||
+          errorCode === "messaging/invalid-registration-token"
+        ) {
+          invalidTokens.push(tokenArray[index]);
+        }
       }
-    }
-  });
+    });
 
-  return response;
+    if (invalidTokens.length > 0) {
+      console.log("Removing invalid FCM tokens:", invalidTokens);
+      await UserModel.updateMany(
+        { fcmToken: { $in: invalidTokens } },
+        { $pull: { fcmToken: { $in: invalidTokens } } },
+      );
+    }
+
+    return response;
+  } catch (error) {
+    console.error("Failed to send push notifications via Firebase:", error);
+    return null;
+  }
 };

@@ -12,7 +12,9 @@ const getMyNotifications = async (
   const recipientId = new Types.ObjectId(user.user);
 
   const notifQuery = new QueryBuilder(
-    NotificationModel.find({ recipient: recipientId }),
+    NotificationModel.find({ recipient: recipientId })
+      .populate("sender", "_id name email profileImage role")
+      .sort({ createdAt: -1 }),
     query,
   )
     .filter()
