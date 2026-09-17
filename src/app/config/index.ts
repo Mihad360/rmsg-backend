@@ -7,7 +7,7 @@ const NODE_ENV = process.env.NODE_ENV || "development";
 // Falls back to .env if no environment-specific file exists
 dotenv.config({
   path: path.join(process.cwd(), `.env.${NODE_ENV}`),
-  override: true,
+  override: false,
 });
 // Also load base .env as fallback for any missing keys
 dotenv.config({

@@ -31,6 +31,8 @@ app.use("/api/v1", router);
 app.use("/privacy-policy", privacyControllers.htmlRoute);
 app.use("/app-instruction", privacyControllers.appInstruction);
 
+app.get("/health", (_req, res) => res.status(200).send("ok"));
+
 app.get("/", (req: Request, res: Response) => {
   res.status(200).send(template);
 });
