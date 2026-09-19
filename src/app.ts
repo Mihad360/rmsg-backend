@@ -10,6 +10,8 @@ import { privacyControllers } from "./app/modules/Settings/privacy/Privacy.contr
 import { logHttpRequests } from "./logger/logger";
 const app: Application = express();
 
+app.set("trust proxy", 1);
+
 app.use(logHttpRequests);
 app.use(express.json());
 app.use(
@@ -32,6 +34,7 @@ app.use("/privacy-policy", privacyControllers.htmlRoute);
 app.use("/app-instruction", privacyControllers.appInstruction);
 
 app.get("/health", (_req, res) => res.status(200).send("ok"));
+app.get("/favicon.ico", (_req, res) => res.status(204).end());
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200).send(template);
