@@ -12,7 +12,7 @@ export type AnnouncementTargetType = "all" | "group";
 export interface IAnnouncementGroupFilter {
   gender?: "male" | "female";
   ageRange?: { min?: number; max?: number };
-  employmentStatus?: "employed" | "unemployed";
+  employmentStatus?: "employed" | "unemployed" | "student";
   educationLevel?: "college" | "school";
 }
 

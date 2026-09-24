@@ -45,7 +45,7 @@ export interface IUser {
   dateOfBirth?: Date;
   age?: number;
   gender?: string;
-  employmentStatus?: "employed" | "unemployed";
+  employmentStatus?: "employed" | "unemployed" | "student";
   education?: string;
   educationLevel?: string;
   universityName?: string;

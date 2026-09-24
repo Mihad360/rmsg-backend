@@ -8,7 +8,16 @@ import QueryBuilder from "../../../builder/QueryBuilder";
 import { IUser } from "./user.interface";
 import { sendFileToCloudinary } from "../../utils/sendImageToCloudinary";
 
-const searchUsers = ["name", "phone", "address"];
+const searchUsers = [
+  "name",
+  "phone",
+  "address",
+  "email",
+  "employmentStatus",
+  "fieldOfWork",
+  "education",
+  "educationLevel",
+];
 
 const getMe = async (user: JwtPayload) => {
   const userId = new Types.ObjectId(user.user);
@@ -24,16 +33,43 @@ const getMe = async (user: JwtPayload) => {
 const getUsers = async (query: Record<string, unknown>) => {
   const modifiedQuery = { ...query };
 
-  if (modifiedQuery.fieldOfWork) {
+  if (modifiedQuery.fieldOfWork && typeof modifiedQuery.fieldOfWork === "string") {
     modifiedQuery.fieldOfWork = {
       $regex: modifiedQuery.fieldOfWork,
       $options: "i",
     };
   }
 
+  if (
+    modifiedQuery.employmentStatus &&
+    typeof modifiedQuery.employmentStatus === "string"
+  ) {
+    modifiedQuery.employmentStatus = {
+      $regex: `^${modifiedQuery.employmentStatus}$`,
+      $options: "i",
+    };
+  }
+
+  if (
+    modifiedQuery.educationLevel &&
+    typeof modifiedQuery.educationLevel === "string"
+  ) {
+    modifiedQuery.educationLevel = {
+      $regex: `^${modifiedQuery.educationLevel}$`,
+      $options: "i",
+    };
+  }
+
+  if (modifiedQuery.gender && typeof modifiedQuery.gender === "string") {
+    modifiedQuery.gender = {
+      $regex: `^${modifiedQuery.gender}$`,
+      $options: "i",
+    };
+  }
+
   const userQuery = new QueryBuilder(
     UserModel.find(
-      {},
+      { isDeleted: false },
       "-fcmToken -password -otp -expiresAt -isVerified -passwordChangedAt",
     ),
     modifiedQuery,
