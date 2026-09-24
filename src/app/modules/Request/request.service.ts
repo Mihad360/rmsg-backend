@@ -126,10 +126,8 @@ const getAllRequests = async (
 
   let filter = {};
 
-  if (isUserExist.role === "superAdmin") {
+  if (isUserExist.role === "superAdmin" || isUserExist.role === "admin") {
     filter = {}; // sees all
-  } else if (isUserExist.role === "admin") {
-    throw new AppError(HttpStatus.FORBIDDEN, "Access denied.");
   } else {
     filter = { user: userId }; // regular user sees only their own
   }

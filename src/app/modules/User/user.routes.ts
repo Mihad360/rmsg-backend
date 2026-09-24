@@ -32,6 +32,6 @@ router.patch(
 
   userControllers.editProfile,
 );
-router.delete("/:id", auth("superAdmin"), userControllers.deleteUser);
+router.delete("/:id", auth("admin", "superAdmin"), userControllers.deleteUser);
 
 export const userRoutes = router;

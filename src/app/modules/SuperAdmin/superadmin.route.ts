@@ -6,22 +6,22 @@ const router = express.Router();
 
 router.get(
   "/stats",
-  auth("superAdmin"),
+  auth("admin", "superAdmin"),
   superAdminControllers.getDashboardStats,
 );
 router.patch(
   "/requests/update/:requestId",
-  auth("admin", "user", "superAdmin"),
+  auth("admin", "superAdmin"),
   superAdminControllers.updateRequestStatus,
 );
 router.patch(
   "/role/update/:userId",
-  auth("superAdmin"),
+  auth("admin", "superAdmin"),
   superAdminControllers.updateRoleAccess,
 );
 router.patch(
   "/block-unblock/:userId",
-  auth("superAdmin"),
+  auth("admin", "superAdmin"),
   superAdminControllers.toggleBlockUser,
 );
 

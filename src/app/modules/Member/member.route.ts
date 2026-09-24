@@ -6,17 +6,17 @@ const router = express.Router();
 
 router.post(
   "/choose-mother/:motherTreeMemberId",
-  auth("user", "admin"),
+  auth("user", "admin", "superAdmin"),
   memberControllers.requestToJoinMotherTree,
 );
 router.post(
   "/remove-child/:memberId",
-  auth("superAdmin"),
+  auth("admin", "superAdmin"),
   memberControllers.removeUserFromTree,
 );
 router.post(
   "/add-child/:userId/:motherMemberId",
-  auth("superAdmin"),
+  auth("admin", "superAdmin"),
   memberControllers.addUserToTree,
 );
 

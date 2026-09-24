@@ -17,7 +17,7 @@ router.get(
 );
 router.post(
   "/upload",
-  auth("superAdmin"),
+  auth("admin", "superAdmin"),
   upload.single("image"),
   (req: Request, res: Response, next: NextFunction) => {
     if (req.body.data) {
@@ -29,7 +29,7 @@ router.post(
 );
 router.delete(
   "/:bannerId/delete",
-  auth("superAdmin"),
+  auth("admin", "superAdmin"),
   bannerControllers.deleteBanner,
 );
 

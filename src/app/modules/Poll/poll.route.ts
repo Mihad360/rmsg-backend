@@ -12,12 +12,12 @@ router.get(
 );
 router.get(
   "/:pollId/answers",
-  auth("superAdmin", "user"),
+  auth("admin", "superAdmin", "user"),
   pollControllers.getPollAnswers,
 );
 router.get(
   "/:pollId/results",
-  auth("superAdmin"),
+  auth("admin", "superAdmin"),
   pollControllers.getPollResults,
 );
 
@@ -26,15 +26,15 @@ router.post(
   auth("user", "admin", "superAdmin"),
   pollControllers.answerPoll,
 );
-router.post("/create", auth("superAdmin"), pollControllers.createPoll);
+router.post("/create", auth("admin", "superAdmin"), pollControllers.createPoll);
 router.patch(
   "/:pollId/update",
-  auth("superAdmin", "user"),
+  auth("admin", "superAdmin", "user"),
   pollControllers.updatePoll,
 );
 router.delete(
   "/:pollId/delete",
-  auth("superAdmin", "user"),
+  auth("admin", "superAdmin", "user"),
   pollControllers.deletePoll,
 );
 
