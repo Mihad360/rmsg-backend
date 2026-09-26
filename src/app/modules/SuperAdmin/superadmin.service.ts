@@ -5,8 +5,6 @@ import AppError from "../../erros/AppError";
 import { UserModel } from "../User/user.model";
 import { MemberModel } from "../Member/member.model";
 import { TreeModel } from "../Tree/tree.model";
-
-import { Types } from "mongoose";
 import { createNotification } from "../Notification/notification.utils";
 import { sendPushNotifications } from "../../utils/firebase/notification";
 

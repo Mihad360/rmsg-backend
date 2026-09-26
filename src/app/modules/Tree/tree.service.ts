@@ -61,7 +61,7 @@ const getMyTree = async (user: JwtPayload) => {
     isDeleted: false,
   })
     .select("_id label level relationType parent spouseOf linkedUser")
-    .populate("linkedUser", "_id name email role profileImage")
+    .populate("linkedUser", "_id name arabicName email role profileImage")
     .sort({ createdAt: 1 })
     .lean();
 
@@ -196,7 +196,7 @@ const getFullTree = async (query: Record<string, unknown> = {}) => {
     }
   }
 
-  // Search: promote members whose label matches directly under the main
+  // Search: promote members whose label or linkedUser matches directly under the main
   // root, each keeping its own subtree, and drop everything else.
   const searchTerm =
     typeof query.searchTerm === "string" ? query.searchTerm.trim() : "";
@@ -206,10 +206,21 @@ const getFullTree = async (query: Record<string, unknown> = {}) => {
 
     const rootId = root._id.toString();
 
-    // nodes whose label matches the search term
+    // nodes whose label or user details match the search term
     const matched = new Set<string>();
     for (const node of map.values()) {
-      if (node.label && regex.test(node.label)) {
+      const linked = node.linkedUser as any;
+      const label = node.label || "";
+      const userName = linked?.name || "";
+      const userArabicName = linked?.arabicName || "";
+      const userEmail = linked?.email || "";
+
+      if (
+        (label && regex.test(label)) ||
+        (userName && regex.test(userName)) ||
+        (userArabicName && regex.test(userArabicName)) ||
+        (userEmail && regex.test(userEmail))
+      ) {
         matched.add(node._id.toString());
       }
     }

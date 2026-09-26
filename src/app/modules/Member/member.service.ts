@@ -63,21 +63,51 @@ const requestToJoinMotherTree = async (
     throw new AppError(HttpStatus.NOT_FOUND, "Associated tree not found.");
   }
 
-  // ── 5. Create the new Member node under the root
-  const newMember = await MemberModel.create({
-    tree: motherMember.tree,
-    parent: motherMember._id, // child of the root member
-    linkedUser: userId,
-    label: existingUser.name, // ← now correctly populated
-    level: (motherMember.level ?? 0) + 1,
-    relationType: "blood",
-    placementStatus: "placed",
-    isTreeRoot: false,
-    isDeleted: false,
-  });
+  // ── 5. Create or update Member node under the mother member
+  const existingMember = existingUser.linkedMember
+    ? await MemberModel.findById(existingUser.linkedMember)
+    : null;
+
+  let newMember;
+
+  if (existingMember) {
+    newMember = await MemberModel.findByIdAndUpdate(
+      existingMember._id,
+      {
+        $set: {
+          tree: motherMember.tree,
+          parent: motherMember._id,
+          label: existingUser.name,
+          level: (motherMember.level ?? 0) + 1,
+          relationType: "blood",
+          placementStatus: "placed",
+          isDeleted: false,
+        },
+      },
+      { new: true },
+    );
+  } else {
+    newMember = await MemberModel.create({
+      tree: motherMember.tree,
+      parent: motherMember._id,
+      linkedUser: userId,
+      label: existingUser.name,
+      level: (motherMember.level ?? 0) + 1,
+      relationType: "blood",
+      placementStatus: "placed",
+      isTreeRoot: false,
+      isDeleted: false,
+    });
+  }
+
+  if (!newMember) {
+    throw new AppError(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      "Failed to place member in tree.",
+    );
+  }
 
   // ── 6. Update user — link member, set motherTree, mark placed
-  //       Also pull from pendingMembers in case they were queued
   await Promise.all([
     UserModel.findByIdAndUpdate(userId, {
       linkedMember: newMember._id,
