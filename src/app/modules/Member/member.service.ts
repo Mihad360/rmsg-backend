@@ -151,11 +151,13 @@ const removeUserFromTree = async (memberId: string) => {
     MemberModel.findByIdAndUpdate(member._id, {
       parent: null,
       placementStatus: "floating",
+      isDeleted: true,
     }),
 
     UserModel.findByIdAndUpdate(member.linkedUser, {
       motherTree: null,
       treeJoinStatus: "unlinked",
+      isDeleted: true,
     }),
 
     TreeModel.findByIdAndUpdate(member.tree, {
