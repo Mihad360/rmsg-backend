@@ -21,6 +21,7 @@ export interface IAnnouncement {
   createdBy: Types.ObjectId | IUser;
   title: string;
   bannerUrl?: string;
+  bannerUrls?: string[];
   description?: string;
   status?: AnnouncementStatus;
   declineReason?: string;

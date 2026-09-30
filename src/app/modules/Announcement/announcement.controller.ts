@@ -6,11 +6,11 @@ import { announcementServices } from "./announcement.service";
 
 const createAnnouncement = catchAsync(async (req, res) => {
   const user = req.user as JwtPayload;
-  const file = req.file as Express.Multer.File;
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
   const result = await announcementServices.createAnnouncement(
     user,
     req.body,
-    file,
+    files,
   );
 
   sendResponse(res, {

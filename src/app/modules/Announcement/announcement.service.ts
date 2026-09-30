@@ -14,7 +14,7 @@ import { sendPushNotifications } from "../../utils/firebase/notification";
 const createAnnouncement = async (
   user: JwtPayload,
   payload: IAnnouncement,
-  file?: Express.Multer.File,
+  files?: { [fieldname: string]: Express.Multer.File[] },
 ) => {
   const existingUser = await UserModel.findById(user.user).lean();
   if (!existingUser) {
@@ -40,13 +40,32 @@ const createAnnouncement = async (
 
   // upload before transaction — cloudinary is external
   let bannerUrl: string | undefined;
-  if (file) {
-    const result = await sendFileToCloudinary(
-      file.buffer,
-      file.originalname,
-      file.mimetype,
-    );
-    bannerUrl = result.secure_url;
+  const bannerUrls: string[] = [];
+
+  if (files) {
+    if (files.image && files.image.length > 0) {
+      const file = files.image[0];
+      const result = await sendFileToCloudinary(
+        file.buffer,
+        file.originalname,
+        file.mimetype,
+      );
+      bannerUrl = result.secure_url;
+      bannerUrls.push(result.secure_url);
+    }
+    
+    if (files.images && files.images.length > 0) {
+      const uploads = await Promise.all(
+        files.images.map((f) =>
+          sendFileToCloudinary(f.buffer, f.originalname, f.mimetype)
+        )
+      );
+      uploads.forEach((res) => bannerUrls.push(res.secure_url));
+      
+      if (!bannerUrl && bannerUrls.length > 0) {
+        bannerUrl = bannerUrls[0];
+      }
+    }
   }
 
   const announcement = await AnnouncementModel.create([
@@ -55,6 +74,7 @@ const createAnnouncement = async (
       createdBy: user.user,
       status: "pending",
       ...(bannerUrl && { bannerUrl }),
+      bannerUrls,
     },
   ]);
 
@@ -118,13 +138,15 @@ const getAnnouncements = async (
   }
 
   const filter: Record<string, unknown> = {
-    status: { $in: ["pending", "approved", "in_progress"] },
     isDeleted: false,
   };
 
   if (query.type === "my") {
     filter.createdBy = new Types.ObjectId(user.user);
   } else {
+    if (!query.status) {
+      filter.status = { $in: ["approved", "in_progress"] };
+    }
     filter.$or = [
       { targetType: "all" },
       {

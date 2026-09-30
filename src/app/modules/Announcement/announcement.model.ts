@@ -20,6 +20,11 @@ const announcementSchema = new Schema<IAnnouncement>(
       default: null,
     },
 
+    bannerUrls: {
+      type: [String],
+      default: [],
+    },
+
     description: {
       type: String,
       trim: true,

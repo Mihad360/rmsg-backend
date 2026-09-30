@@ -61,7 +61,7 @@ const getMyTree = async (user: JwtPayload) => {
     isDeleted: false,
   })
     .select("_id label level relationType parent spouseOf linkedUser")
-    .populate("linkedUser", "_id name arabicName email role profileImage")
+    .populate("linkedUser", "_id name arabicName email role profileImage phone dateOfBirth gender education universityName fieldOfWork linkedinLink")
     .sort({ createdAt: 1 })
     .lean();
 
@@ -167,7 +167,7 @@ const getFullTree = async (query: Record<string, unknown> = {}) => {
     placementStatus: "placed",
   })
     .select("_id label level relationType parent spouseOf linkedUser")
-    .populate("linkedUser", "_id name arabicName email role profileImage")
+    .populate("linkedUser", "_id name arabicName email role profileImage phone dateOfBirth gender education universityName fieldOfWork linkedinLink")
     .sort({ createdAt: 1 })
     .lean();
 

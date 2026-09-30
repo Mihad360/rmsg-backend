@@ -18,7 +18,10 @@ router.get(
 router.post(
   "/create",
   auth("admin", "user", "superAdmin"),
-  upload.single("image"),
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "images", maxCount: 10 },
+  ]),
   (req: Request, res: Response, next: NextFunction) => {
     if (req.body.data) {
       req.body = JSON.parse(req.body.data);

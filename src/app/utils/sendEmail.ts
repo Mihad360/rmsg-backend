@@ -20,6 +20,7 @@ export const sendEmail = async (
     //   host: "smtp.gmail.com",
     //   port: 465,
     //   secure: true,
+    
     //   auth: {
     //     user: config.NODE_MAIL_EMAIL,
     //     pass: config.NODE_MAIL_PASS,
