@@ -14,19 +14,67 @@ import { INotification } from "../Notification/notification.interface";
 import { createNotification } from "../Notification/notification.utils";
 import { sendPushNotifications } from "../../utils/firebase/notification";
 import { createToken, verifyToken } from "../../utils/jwt/jwt";
+import { MemberModel } from "../Member/member.model";
+import { TreeModel } from "../Tree/tree.model";
 
-const createUser = async (payload: IUser) => {
+const createUser = async (payload: IUser & { motherTreeMemberId?: string }) => {
   /* ------------------ Check if user already exists ------------------ */
   const isUserExist = await UserModel.findOne({ email: payload.email });
   if (isUserExist) {
     throw new AppError(HttpStatus.BAD_REQUEST, "The same user already exists");
   }
 
+  const { motherTreeMemberId, ...userData } = payload;
+
+  let motherMember: any = null;
+  if (motherTreeMemberId) {
+    motherMember = await MemberModel.findOne({
+      _id: new Types.ObjectId(motherTreeMemberId),
+      isDeleted: false,
+      placementStatus: "placed",
+    });
+    if (!motherMember) {
+      throw new AppError(
+        HttpStatus.NOT_FOUND,
+        "Selected mother tree member not found",
+      );
+    }
+  }
+
   /* ------------------ Create user ------------------ */
-  const result = await UserModel.create(payload);
+  const result = await UserModel.create({
+    ...userData,
+    ...(motherMember && {
+      motherTree: motherMember.tree,
+      treeJoinStatus: "placed",
+    }),
+  });
 
   if (!result) {
     throw new AppError(HttpStatus.BAD_REQUEST, "User creation failed");
+  }
+
+  // If mother tree was selected, create and link Member node immediately
+  if (motherMember) {
+    const newMember = await MemberModel.create({
+      tree: motherMember.tree,
+      parent: motherMember._id,
+      linkedUser: result._id,
+      label: result.name || userData.name,
+      level: (motherMember.level ?? 0) + 1,
+      relationType: "blood",
+      placementStatus: "placed",
+      isTreeRoot: false,
+      isDeleted: false,
+    });
+
+    await UserModel.findByIdAndUpdate(result._id, {
+      linkedMember: newMember._id,
+    });
+
+    await TreeModel.findByIdAndUpdate(motherMember.tree, {
+      $inc: { totalMembers: 1 },
+    });
   }
 
   /* ------------------ Generate OTP ------------------ */
@@ -194,7 +242,7 @@ const loginUser = async (payload: IAuth) => {
 
     return {
       _id: user._id,
-      role: user.role,
+      role: updateUser?.role || user.role,
       accessToken,
       user: updateUser,
     };

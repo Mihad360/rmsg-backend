@@ -13,7 +13,7 @@ const updateRequestStatus = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Password reset OTP sent to email",
+    message: "Request status updated successfully.",
     data: result,
   });
 });
@@ -25,7 +25,7 @@ const updateRoleAccess = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Password reset OTP sent to email",
+    message: "User role updated successfully.",
     data: result,
   });
 });
@@ -48,7 +48,18 @@ const toggleBlockUser = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: HttpStatus.OK,
     success: true,
-    message: "Dashboard stats fetched successfully.",
+    message: `User ${req.body.type === "block" ? "blocked" : "unblocked"} successfully.`,
+    data: result,
+  });
+});
+
+const deleteUser = catchAsync(async (req, res) => {
+  const userId = req.params.userId || req.params.id;
+  const result = await superAdminServices.deleteUser(userId);
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "User account deleted successfully.",
     data: result,
   });
 });
@@ -58,4 +69,5 @@ export const superAdminControllers = {
   updateRoleAccess,
   getDashboardStats,
   toggleBlockUser,
+  deleteUser,
 };

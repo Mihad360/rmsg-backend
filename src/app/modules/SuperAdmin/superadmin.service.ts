@@ -7,6 +7,7 @@ import { MemberModel } from "../Member/member.model";
 import { TreeModel } from "../Tree/tree.model";
 import { createNotification } from "../Notification/notification.utils";
 import { sendPushNotifications } from "../../utils/firebase/notification";
+import { userServices } from "../User/user.service";
 
 const updateRequestStatus = async (
   requestId: string,
@@ -393,9 +394,14 @@ export const toggleBlockUser = async (userId: string, type: ToggleType) => {
   throw new AppError(HttpStatus.BAD_REQUEST, "Invalid action type.");
 };
 
+const deleteUser = async (userId: string) => {
+  return await userServices.deleteUser(userId);
+};
+
 export const superAdminServices = {
   updateRequestStatus,
   updateRoleAccess,
   getDashboardStats,
   toggleBlockUser,
+  deleteUser,
 };

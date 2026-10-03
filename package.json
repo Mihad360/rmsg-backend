@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development nodemon src/server.ts",
-    "build": "tsc",
-    "start": "cross-env NODE_ENV=production node dist/server.js",
+    "dev": "node api.js && cross-env NODE_ENV=development nodemon src/server.ts",
+    "build": "node api.js && tsc",
+    "start": "node api.js && cross-env NODE_ENV=production node dist/server.js",
     "start:dev": "cross-env NODE_ENV=development node dist/server.js",
     "lint": "eslint 'src/**/*.{ts,js,json}'",
     "lint:fix": "eslint src --fix",

@@ -7,6 +7,8 @@ import AppError from "../../erros/AppError";
 import QueryBuilder from "../../../builder/QueryBuilder";
 import { IUser } from "./user.interface";
 import { sendFileToCloudinary } from "../../utils/sendImageToCloudinary";
+import { MemberModel } from "../Member/member.model";
+import { TreeModel } from "../Tree/tree.model";
 
 const searchUsers = [
   "name",
@@ -67,9 +69,18 @@ const getUsers = async (query: Record<string, unknown>) => {
     };
   }
 
+  const baseFilter: Record<string, unknown> = { isDeleted: false };
+  if (modifiedQuery.treeJoinStatus) {
+    baseFilter.treeJoinStatus = modifiedQuery.treeJoinStatus;
+    delete modifiedQuery.treeJoinStatus;
+  } else if (modifiedQuery.placedOnly === "true") {
+    baseFilter.treeJoinStatus = "placed";
+  }
+  delete modifiedQuery.placedOnly;
+
   const userQuery = new QueryBuilder(
     UserModel.find(
-      { isDeleted: false },
+      baseFilter,
       "-fcmToken -password -otp -expiresAt -isVerified -passwordChangedAt",
     ),
     modifiedQuery,
@@ -246,15 +257,80 @@ const editProfile = async (
 };
 
 const deleteUser = async (id: string) => {
-  const user = await UserModel.findByIdAndUpdate(
+  const user = await UserModel.findById(id);
+  if (!user) {
+    throw new AppError(HttpStatus.NOT_FOUND, "User not found");
+  }
+
+  if (user.isDeleted) {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "User account is already deleted.",
+    );
+  }
+
+  if (user.role === "superAdmin") {
+    throw new AppError(
+      HttpStatus.BAD_REQUEST,
+      "Super admin account cannot be deleted.",
+    );
+  }
+
+  // Handle linked tree member if exists
+  if (user.linkedMember) {
+    const member = await MemberModel.findById(user.linkedMember);
+    if (member) {
+      if (member.isTreeRoot) {
+        // Root node cannot be removed from tree structure, only detach user account
+        await MemberModel.findByIdAndUpdate(member._id, {
+          linkedUser: null,
+        });
+      } else {
+        const hasChildren = await MemberModel.exists({
+          parent: member._id,
+          isDeleted: false,
+        });
+
+        if (hasChildren) {
+          // If has children, keep node in tree to preserve hierarchy, but detach account
+          await MemberModel.findByIdAndUpdate(member._id, {
+            linkedUser: null,
+          });
+        } else {
+          // Leaf node: safely soft-delete member node and decrement count
+          await MemberModel.findByIdAndUpdate(member._id, {
+            parent: null,
+            placementStatus: "floating",
+            isDeleted: true,
+            linkedUser: null,
+          });
+
+          if (member.tree) {
+            await TreeModel.findByIdAndUpdate(member.tree, {
+              $inc: { totalMembers: -1 },
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Soft delete user and clear session/push tokens
+  const deletedUser = await UserModel.findByIdAndUpdate(
     id,
-    { isDeleted: true },
+    {
+      isDeleted: true,
+      isActive: false,
+      motherTree: null,
+      linkedMember: null,
+      treeJoinStatus: "unlinked",
+      fcmToken: [],
+      passwordChangedAt: new Date(),
+    },
     { new: true },
   );
-  if (!user) {
-    throw new AppError(HttpStatus.NOT_FOUND, "user not deleted");
-  }
-  return user;
+
+  return deletedUser;
 };
 
 export const userServices = {
