@@ -6,9 +6,19 @@ import { announcementControllers } from "./announcement.controller";
 const router = express.Router();
 
 router.get(
+  "/",
+  auth("admin", "user", "superAdmin"),
+  announcementControllers.getAnnouncements,
+);
+router.get(
   "/all",
   auth("admin", "user", "superAdmin"),
   announcementControllers.getAnnouncements,
+);
+router.get(
+  "/my-requests",
+  auth("admin", "user", "superAdmin"),
+  announcementControllers.getMyAnnouncementRequests,
 );
 router.get(
   "/:announcement",

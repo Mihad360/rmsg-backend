@@ -42,7 +42,7 @@ const requestToJoinMotherTree = async (
     isDeleted: false,
     placementStatus: "placed",
   })
-    .populate("linkedUser", "name phone")
+    .populate("linkedUser", "_id name arabicName phone profileImage")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .lean()) as any;
 
@@ -192,7 +192,7 @@ const addUserToTree = async (userId: string, motherMemberId: string) => {
     isDeleted: false,
     placementStatus: "placed",
   })
-    .populate("linkedUser", "name phone")
+    .populate("linkedUser", "_id name arabicName phone profileImage")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .lean()) as any;
 
@@ -260,8 +260,47 @@ const addUserToTree = async (userId: string, motherMemberId: string) => {
   return finalMember;
 };
 
+const getMotherTrees = async () => {
+  const tree = await TreeModel.findOne({ isDeleted: false, isDefault: true }).lean();
+  if (!tree) {
+    throw new AppError(HttpStatus.NOT_FOUND, "Default family tree not found.");
+  }
+
+  // 1. Fetch root member (level 0)
+  const rootMember = await MemberModel.findOne({
+    tree: tree._id,
+    level: 0,
+    isDeleted: false,
+    placementStatus: "placed",
+  })
+    .populate("linkedUser", "_id name arabicName email role profileImage phone")
+    .lean();
+
+  // 2. Fetch mother branches (level 1 direct branches)
+  const branches = await MemberModel.find({
+    tree: tree._id,
+    level: 1,
+    isDeleted: false,
+    placementStatus: "placed",
+  })
+    .populate("linkedUser", "_id name arabicName email role profileImage phone")
+    .sort({ createdAt: 1 })
+    .lean();
+
+  return {
+    treeInfo: {
+      _id: tree._id,
+      name: tree.name,
+      totalMembers: tree.totalMembers,
+    },
+    root: rootMember,
+    motherTrees: branches,
+  };
+};
+
 export const memberServices = {
   requestToJoinMotherTree,
   removeUserFromTree,
   addUserToTree,
+  getMotherTrees,
 };

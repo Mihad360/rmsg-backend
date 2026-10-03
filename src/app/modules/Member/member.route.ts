@@ -4,6 +4,7 @@ import { memberControllers } from "./member.controller";
 
 const router = express.Router();
 
+router.get("/mother-trees", memberControllers.getMotherTrees);
 router.post(
   "/choose-mother/:motherTreeMemberId",
   auth("user", "admin", "superAdmin"),

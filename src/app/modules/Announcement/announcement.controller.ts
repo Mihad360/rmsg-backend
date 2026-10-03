@@ -78,9 +78,26 @@ const deleteAnnouncement = catchAsync(async (req, res) => {
   });
 });
 
+const getMyAnnouncementRequests = catchAsync(async (req, res) => {
+  const user = req.user as JwtPayload;
+  const result = await announcementServices.getMyAnnouncementRequests(
+    user,
+    req.query,
+  );
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Announcement requests retrieved successfully",
+    meta: result.meta,
+    data: result.result,
+  });
+});
+
 export const announcementControllers = {
   createAnnouncement,
   getAnnouncements,
+  getMyAnnouncementRequests,
   updateAnnouncementStatus,
   getEachAnnouncement,
   deleteAnnouncement,

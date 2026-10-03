@@ -111,7 +111,10 @@ const getTree = async (memberId: string, query: Record<string, unknown>) => {
     placementStatus: "placed",
   })
     .select("_id label level relationType parent linkedUser")
-    .populate("linkedUser")
+    .populate(
+      "linkedUser",
+      "_id name arabicName email role profileImage phone dateOfBirth gender education universityName fieldOfWork linkedinLink",
+    )
     .lean();
 
   if (!startingNode) {
@@ -125,7 +128,10 @@ const getTree = async (memberId: string, query: Record<string, unknown>) => {
       placementStatus: "placed",
     })
       .select("_id label level relationType parent linkedUser")
-      .populate("linkedUser")
+      .populate(
+        "linkedUser",
+        "_id name arabicName email role profileImage phone dateOfBirth gender education universityName fieldOfWork linkedinLink",
+      )
       .sort({ createdAt: 1 }); // ← oldest child first
 
     const children = await new QueryBuilder<IMember>(baseQuery, query)

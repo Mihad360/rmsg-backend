@@ -141,24 +141,50 @@ const getAnnouncements = async (
     isDeleted: false,
   };
 
+  const isAdminOrSuper =
+    existingUser.role === "admin" || existingUser.role === "superAdmin";
+
+  const isRequestQuery =
+    query.status === "pending" ||
+    query.status === "declined" ||
+    query.type === "my" ||
+    query.isRequest === "true";
+
   if (query.type === "my") {
     filter.createdBy = new Types.ObjectId(user.user);
-  } else {
-    if (!query.status) {
-      filter.status = { $in: ["approved", "in_progress"] };
+    if (query.status) {
+      filter.status = query.status;
     }
-    filter.$or = [
-      { targetType: "all" },
-      {
-        targetType: "group",
-        targetUsers: new Types.ObjectId(user.user),
-      },
-    ];
+  } else if (!isAdminOrSuper) {
+    // Normal user:
+    // In announcement request views (pending, declined, or requests), they MUST only see their own!
+    if (isRequestQuery) {
+      filter.createdBy = new Types.ObjectId(user.user);
+      if (query.status) {
+        filter.status = query.status;
+      }
+    } else {
+      // Normal announcement feed: only approved / in_progress announcements targeted to them
+      filter.status = query.status || { $in: ["approved", "in_progress"] };
+      filter.$or = [
+        { targetType: "all" },
+        {
+          targetType: "group",
+          targetUsers: new Types.ObjectId(user.user),
+        },
+      ];
+    }
+  } else {
+    // Admin / SuperAdmin sees all announcements and requests
+    if (query.status) {
+      filter.status = query.status;
+    }
   }
 
   // remove custom query param
   const modifiedQuery = { ...query };
   delete modifiedQuery.type;
+  delete modifiedQuery.isRequest;
 
   const baseQuery = AnnouncementModel.find(filter)
     .populate("createdBy", "_id name profileImage")
@@ -174,6 +200,13 @@ const getAnnouncements = async (
   const result = await announcements.modelQuery;
 
   return { meta, result };
+};
+
+const getMyAnnouncementRequests = async (
+  user: JwtPayload,
+  query: Record<string, unknown>,
+) => {
+  return await getAnnouncements(user, { ...query, type: "my" });
 };
 
 const getEachAnnouncement = async (announcementId: string) => {
@@ -251,6 +284,7 @@ const deleteAnnouncement = async (announcementId: string, user: JwtPayload) => {
 export const announcementServices = {
   createAnnouncement,
   getAnnouncements,
+  getMyAnnouncementRequests,
   updateAnnouncementStatus,
   getEachAnnouncement,
   deleteAnnouncement,

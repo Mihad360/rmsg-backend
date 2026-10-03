@@ -24,5 +24,15 @@ router.patch(
   auth("admin", "superAdmin"),
   superAdminControllers.toggleBlockUser,
 );
+router.delete(
+  "/users/:userId",
+  auth("admin", "superAdmin"),
+  superAdminControllers.deleteUser,
+);
+router.delete(
+  "/delete-account/:userId",
+  auth("admin", "superAdmin"),
+  superAdminControllers.deleteUser,
+);
 
 export const superAdminRoutes = router;

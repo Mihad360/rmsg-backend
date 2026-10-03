@@ -45,8 +45,20 @@ const addUserToTree = catchAsync(async (req, res) => {
   });
 });
 
+const getMotherTrees = catchAsync(async (req, res) => {
+  const result = await memberServices.getMotherTrees();
+
+  sendResponse(res, {
+    statusCode: HttpStatus.OK,
+    success: true,
+    message: "Mother trees retrieved successfully",
+    data: result,
+  });
+});
+
 export const memberControllers = {
   requestToJoinMotherTree,
   removeUserFromTree,
   addUserToTree,
+  getMotherTrees,
 };
